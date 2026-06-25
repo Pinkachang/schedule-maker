@@ -555,6 +555,7 @@ const DEFAULT_SLOTS = [
 
 let state = null;
 let venueFilter = 'all';   // 場館檔期清單的隊伍篩選
+let editingTeam = null;    // 正在行內編輯的隊伍 id
 
 function blankState(){
   return {
@@ -1058,15 +1059,25 @@ function renderSetup(){
   // 隊伍清單（含共用場館標記）
   const venueCount={};
   state.teams.forEach(t=>venueCount[t.venue]=(venueCount[t.venue]||0)+1);
-  document.getElementById('teamList').innerHTML=state.teams.map(t=>`
-    <div class="team-row">
+  document.getElementById('teamList').innerHTML=state.teams.map(t=>{
+    if(t.id===editingTeam){
+      return `<div class="team-row" style="gap:8px">
+        <input class="input" id="et_name_${t.id}" value="${t.name.replace(/"/g,'&quot;')}" style="flex:0 0 90px" placeholder="隊名">
+        <input class="input" id="et_venue_${t.id}" value="${t.venue.replace(/"/g,'&quot;')}" style="flex:1" placeholder="主場名稱">
+        <input type="color" id="et_color_${t.id}" value="${t.color}" style="width:34px;height:34px;border:1px solid var(--line);border-radius:5px;padding:1px">
+        <button class="btn accent sm" onclick="saveTeam('${t.id}')">儲存</button>
+        <button class="btn ghost sm" onclick="cancelEditTeam()">取消</button>
+      </div>`;
+    }
+    return `<div class="team-row">
       <span class="swatch" style="background:${t.color}"></span>
       <span class="tname">${t.name}</span>
       <span class="tvenue"><span class="vtag">${t.venue}</span>
         ${venueCount[t.venue]>1?'<span class="shared"> · 共用場館</span>':''}</span>
-      <input type="color" value="${t.color}" onchange="updTeamColor('${t.id}',this.value)" style="width:30px;height:26px;border:1px solid var(--line);border-radius:5px;padding:1px">
+      <button class="btn ghost sm" onclick="editTeam('${t.id}')">編輯</button>
       <button class="btn ghost sm" onclick="delTeam('${t.id}')">刪除</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   // 賽季
   document.getElementById('seasonStart').value=state.season.start;
@@ -1099,6 +1110,18 @@ function delTeam(id){
   state.teamBlackouts=state.teamBlackouts.filter(b=>b.teamId!==id);
   state.venueAvail=state.venueAvail.filter(v=>v.teamId!==id);
   renderAll();renderTeamSelects();toast('已刪除');
+}
+function editTeam(id){editingTeam=id;renderSetup();
+  setTimeout(()=>{const el=document.getElementById('et_name_'+id);if(el)el.focus()},30);}
+function cancelEditTeam(){editingTeam=null;renderSetup();}
+function saveTeam(id){
+  const t=team(id);if(!t)return;
+  const name=document.getElementById('et_name_'+id).value.trim();
+  const venue=document.getElementById('et_venue_'+id).value.trim();
+  const color=document.getElementById('et_color_'+id).value;
+  if(!name){toast('隊名不可空白',true);return}
+  t.name=name;t.venue=venue||name+'主場';t.color=color;
+  editingTeam=null;renderAll();renderTeamSelects();toast('已更新隊伍');
 }
 function updTeamColor(id,c){team(id).color=c;renderAll()}
 function regenerate(){
