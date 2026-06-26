@@ -149,6 +149,8 @@ table.tbl tr:last-child td{border-bottom:none}
 .pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11.5px;font-weight:600}
 .pill.league{background:#e8eef6;color:#2e5589}
 .pill.team{background:var(--warn-bg);color:var(--warn)}
+/* 各隊禁排清單內的類別下拉（縮小，貼合表格） */
+select.scope-sel{padding:4px 6px;font-size:12px;min-width:96px;width:auto}
 
 /* ---------- 排程行事曆 ---------- */
 .sched-toolbar{
@@ -657,8 +659,16 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
 
       <div class="card">
         <h3>各隊禁排</h3>
-        <p class="hint">指定某隊在某些日期不排主客場（例如球員徵召、球團活動）。</p>
-        <div class="field"><label>隊伍</label><select class="input" id="tbTeam"></select></div>
+        <p class="hint">指定某隊在某些日期不排賽（例如球員徵召、球團活動）。可選擇<b>主客皆禁／僅禁主場／僅禁客場</b>。</p>
+        <div class="row" style="margin-bottom:12px">
+          <div class="field" style="flex:1.3"><label>隊伍</label><select class="input" id="tbTeam"></select></div>
+          <div class="field" style="flex:1.2"><label>禁排類別</label>
+            <select class="input" id="tbScope">
+              <option value="both">主客皆禁</option>
+              <option value="home">僅禁主場</option>
+              <option value="away">僅禁客場</option>
+            </select></div>
+        </div>
         <div class="row" style="margin-bottom:12px">
           <div class="field"><label>開始日</label><input class="input" type="date" id="tbStart"></div>
           <div class="field"><label>結束日</label><input class="input" type="date" id="tbEnd"></div>
@@ -811,7 +821,7 @@ function blankState(){
     slots: DEFAULT_SLOTS.map(s=>({...s})),
     homeRounds: 3,         // 每隊在主場對每個對手的對戰次數（主場輪數）
     leagueBlackouts: [],   // {id,start,end,reason}
-    teamBlackouts: [],     // {id,teamId,start,end,reason}
+    teamBlackouts: [],     // {id,teamId,scope,start,end,reason}  scope:'both'|'home'|'away'（無 scope 視為 both）
     venueAvail: [],      // {teamId,date,time,status}  (date: 'yyyy-mm-dd')
     matches: {},           // 'date|time' -> {home,away}
     meta: {savedBy:'', savedAt:''},  // 存檔者/時間（存 JSON 時寫入，載入時顯示）
@@ -1005,10 +1015,21 @@ function leagueBlackoutReason(dateStr){
   return b?b.reason||'禁排':null;
 }
 // 某隊該日是否被各隊禁排
-function teamBlackoutReason(teamId,dateStr){
-  const b=state.teamBlackouts.find(x=>x.teamId===teamId && inRange(dateStr,x.start,x.end));
-  return b?b.reason||'禁排':null;
+// side: 'home' | 'away' | undefined(任一側被禁就回傳)
+// scope 相容：舊資料無 scope → 視為 'both'（主客皆禁，行為不變）
+function tbScope(b){return b.scope||'both'}
+function teamBlackoutReason(teamId,dateStr,side){
+  const list=state.teamBlackouts.filter(x=>x.teamId===teamId && inRange(dateStr,x.start,x.end));
+  for(const b of list){
+    const sc=tbScope(b);
+    if(side==='home'){ if(sc==='both'||sc==='home') return b.reason||'禁排'; }
+    else if(side==='away'){ if(sc==='both'||sc==='away') return b.reason||'禁排'; }
+    else { return b.reason||'禁排'; }  // 未指定側：任一筆即回傳（給非排賽情境用）
+  }
+  return null;
 }
+// 類別中文標籤
+function tbScopeLabel(sc){return sc==='home'?'僅禁主場':sc==='away'?'僅禁客場':'主客皆禁'}
 // 某隊是否已提供可用主場檔期清單
 function teamHasAvail(teamId){
   return state.venueAvail.some(v=>v.teamId===teamId);
@@ -1507,7 +1528,7 @@ function renderPickers(){
   // 主場
   homeBox.innerHTML=state.teams.map(t=>{
     let dis='',reason='',outside=false;
-    const tb=teamBlackoutReason(t.id,date);
+    const tb=teamBlackoutReason(t.id,date,'home');
     if(tb){dis='disabled';reason='禁排'}
     else if(usedToday.has(t.id)){dis='disabled';reason='當日已出賽'}      // 需求3
     else if((homeCnt[t.id]||0)>=HT){dis='disabled';reason='主場已滿'}      // 需求1
@@ -1522,7 +1543,7 @@ function renderPickers(){
   // 客場
   awayBox.innerHTML=state.teams.map(t=>{
     let dis='',reason='';
-    const tb=teamBlackoutReason(t.id,date);
+    const tb=teamBlackoutReason(t.id,date,'away');
     if(tb){dis='disabled';reason='禁排'}
     else if(usedToday.has(t.id)){dis='disabled';reason='當日已出賽'}      // 需求3
     else if((awayCntOf(others,t.id))>=HT){dis='disabled';reason='客場已滿'} // 客場上限
@@ -1857,12 +1878,19 @@ function renderBlackout(){
   document.getElementById('leagueBlackoutTbl').innerHTML=lb;
 
   // 各隊
-  let tb=`<tr><th>隊伍</th><th>區間</th><th>原因</th><th></th></tr>`;
-  if(state.teamBlackouts.length===0)tb+=`<tr><td colspan="4" class="muted">尚無</td></tr>`;
+  let tb=`<tr><th>隊伍</th><th>區間</th><th>類別</th><th>原因</th><th></th></tr>`;
+  if(state.teamBlackouts.length===0)tb+=`<tr><td colspan="5" class="muted">尚無</td></tr>`;
   state.teamBlackouts.forEach(b=>{
     const t=team(b.teamId);
+    const sc=tbScope(b);
     tb+=`<tr><td><span style="color:${t?.color}">●</span> ${teamName(b.teamId)}</td>
-      <td>${fmtDate(b.start)} – ${fmtDate(b.end)}</td><td><span class="pill team">${b.reason||'禁排'}</span></td>
+      <td>${fmtDate(b.start)} – ${fmtDate(b.end)}</td>
+      <td><select class="input scope-sel" onchange="setTeamBlackoutScope('${b.id}',this.value)">
+        <option value="both"${sc==='both'?' selected':''}>主客皆禁</option>
+        <option value="home"${sc==='home'?' selected':''}>僅禁主場</option>
+        <option value="away"${sc==='away'?' selected':''}>僅禁客場</option>
+      </select></td>
+      <td><span class="pill team">${b.reason||'禁排'}</span></td>
       <td><button class="btn ghost sm" onclick="delTeamBlackout('${b.id}')">刪除</button></td></tr>`;
   });
   document.getElementById('teamBlackoutTbl').innerHTML=tb;
@@ -1910,15 +1938,20 @@ function addLeagueBlackout(){
 function delLeagueBlackout(id){state.leagueBlackouts=state.leagueBlackouts.filter(b=>b.id!==id);renderBlackout();renderAll()}
 function addTeamBlackout(){
   const teamId=document.getElementById('tbTeam').value;
+  const scope=document.getElementById('tbScope').value||'both';
   const start=document.getElementById('tbStart').value, end=document.getElementById('tbEnd').value||start;
   const reason=document.getElementById('tbReason').value.trim();
   if(!teamId){toast('請選擇隊伍',true);return}
   if(!start){toast('請選擇日期',true);return}
-  state.teamBlackouts.push({id:uid(),teamId,start,end,reason});
+  state.teamBlackouts.push({id:uid(),teamId,scope,start,end,reason});
   document.getElementById('tbReason').value='';
   renderBlackout();renderAll();toast('已新增各隊禁排');
 }
 function delTeamBlackout(id){state.teamBlackouts=state.teamBlackouts.filter(b=>b.id!==id);renderBlackout();renderAll()}
+function setTeamBlackoutScope(id,scope){
+  const b=state.teamBlackouts.find(x=>x.id===id);
+  if(b){b.scope=scope;renderBlackout();renderAll();toast('已更新禁排類別：'+tbScopeLabel(scope))}
+}
 function delVenue(i){state.venueAvail.splice(i,1);renderBlackout();renderAll()}
 function toggleVenueStatus(i){
   const v=state.venueAvail[i];
