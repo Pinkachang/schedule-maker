@@ -279,6 +279,59 @@ table.tbl tr:last-child td{border-bottom:none}
 .sb-team .sct .full{color:var(--ok)}
 .sb-team.alldone{border-color:#bfe6d4;background:#f3fbf7}
 
+/* ---------- 賽程預覽 ---------- */
+.preview-toolbar{
+  display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:12px 16px;margin-bottom:16px;box-shadow:var(--shadow);
+}
+.pv-banner{
+  border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;font-size:13.5px;
+  display:flex;align-items:center;gap:10px;
+}
+.pv-banner.draft{background:var(--warn-bg);border:1px solid #f0dca8;color:#8a6d1f}
+.pv-banner.done{background:#f3fbf7;border:1px solid #bfe6d4;color:#1f7a52}
+.pv-banner .pv-ico{font-size:18px;flex-shrink:0}
+.pv-banner b{font-weight:700}
+.pv-week{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  margin-bottom:14px;overflow:hidden;box-shadow:var(--shadow);
+}
+.pv-week-head{
+  display:flex;align-items:center;gap:12px;padding:10px 16px;
+  background:#fafbfc;border-bottom:1px solid var(--line);
+}
+.pv-week-head .pwno{font-weight:800;color:var(--court);font-size:15px}
+.pv-week-head .pwrange{color:var(--ink-soft);font-size:12.5px}
+.pv-week-head .pwcount{margin-left:auto;font-size:12px;color:var(--ink-soft);font-weight:600}
+.pv-row{
+  display:flex;align-items:center;gap:12px;padding:10px 16px;
+  border-bottom:1px solid var(--line-soft);font-size:13.5px;
+}
+.pv-row:last-child{border-bottom:none}
+.pv-row:nth-child(even){background:#fcfdfe}
+.pv-row.tent{border-left:4px solid var(--warn)}
+.pv-date{flex:0 0 116px;color:var(--ink-soft);font-size:12.5px}
+.pv-date .pdow{color:var(--court);font-weight:700;margin-left:3px}
+.pv-time{flex:0 0 52px;font-weight:700;font-variant-numeric:tabular-nums}
+.pv-teams{flex:1;display:flex;align-items:center;gap:9px;min-width:0;flex-wrap:wrap}
+.pv-side{display:inline-flex;align-items:center;gap:6px;font-weight:600}
+.pv-side .pl{width:20px;height:20px;object-fit:contain;border-radius:4px;flex-shrink:0}
+.pv-side .pc{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+.pv-side .ptag{font-size:9.5px;font-weight:700;padding:1px 5px;border-radius:4px}
+.pv-side .ptag.home{color:var(--court);background:#fbeee2}
+.pv-side .ptag.away{color:var(--ink-soft);background:var(--line-soft)}
+.pv-vs{color:var(--lock);font-size:11px;font-weight:700;letter-spacing:1px}
+.pv-venue{flex:0 0 auto;color:var(--ink-soft);font-size:12px;max-width:170px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv-status{flex:0 0 auto}
+.pv-status .ts{font-size:10.5px;font-weight:700;color:#fff;background:var(--warn);padding:2px 7px;border-radius:5px}
+.pv-empty{text-align:center;padding:50px 20px;color:var(--ink-soft)}
+.pv-empty .big{font-size:15px;font-weight:600;color:var(--ink);margin-bottom:6px}
+@media(max-width:760px){
+  .pv-venue{display:none}
+  .pv-date{flex-basis:92px}
+}
+
 /* ---------- 月曆批次輸入（場館可用檔期）---------- */
 .vcal-wrap{border:1px solid var(--line);border-radius:10px;padding:14px;background:#fcfdfe;margin-top:6px}
 .vcal-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
@@ -293,7 +346,7 @@ table.tbl tr:last-child td{border-bottom:none}
 .vcal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
 .vcal-grid .vdow{text-align:center;font-size:11px;color:var(--ink-soft);font-weight:600;padding:3px 0}
 .vcal-cell{
-  aspect-ratio:1/1;border:1px solid var(--line-soft);border-radius:7px;background:#fff;
+  height:38px;border:1px solid var(--line-soft);border-radius:6px;background:#fff;
   display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;
   position:relative;transition:.1s;user-select:none;
 }
@@ -424,6 +477,7 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
 
 <div class="tabs">
   <button class="tab active" data-tab="schedule" onclick="switchTab('schedule')">排程</button>
+  <button class="tab" data-tab="preview" onclick="switchTab('preview')">賽程預覽</button>
   <button class="tab" data-tab="overview" onclick="switchTab('overview')">進度總覽 <span class="badge" id="issueBadge" style="display:none">0</span></button>
   <button class="tab" data-tab="setup" onclick="switchTab('setup')">隊伍與賽季</button>
   <button class="tab" data-tab="blackout" onclick="switchTab('blackout')">禁排與場館</button>
@@ -446,6 +500,24 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
     <div id="sbSentinel" style="height:1px"></div>
     <div class="scoreboard" id="scoreboard" style="display:none"></div>
     <div id="weeksContainer"></div>
+  </div>
+
+  <!-- ============ 賽程預覽 ============ -->
+  <div class="view" id="view-preview">
+    <div class="section-head">
+      <h2>賽程預覽</h2>
+      <p>目前排出的賽程成品樣式，依週分段。可篩選單一球隊檢視。</p>
+    </div>
+    <div class="preview-toolbar">
+      <div class="field" style="margin-bottom:0">
+        <label>檢視球隊</label>
+        <select class="input" id="previewTeamSel" onchange="setPreviewTeam(this.value)" style="min-width:160px"></select>
+      </div>
+      <span class="spacer" style="flex:1"></span>
+      <span class="tiny muted">🟡 黃左框＝協調中　主/客＝該隊主客場</span>
+    </div>
+    <div id="previewBanner"></div>
+    <div id="previewContainer"></div>
   </div>
 
   <!-- ============ 進度總覽 ============ -->
@@ -1005,6 +1077,7 @@ function switchTab(t){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById('view-'+t).classList.add('active');
   if(t==='schedule')renderSchedule();
+  if(t==='preview')renderPreview();
   if(t==='overview')renderOverview();
   if(t==='setup')renderSetup();
   if(t==='blackout')renderBlackout();
@@ -1019,6 +1092,7 @@ function renderAll(){
   if(badCount>0){badge.style.display='inline-block';badge.textContent=badCount}
   else badge.style.display='none';
   if(currentTab==='schedule')renderSchedule();
+  if(currentTab==='preview')renderPreview();
   if(currentTab==='overview')renderOverview();
   if(currentTab==='setup')renderSetup();
   if(currentTab==='blackout')renderBlackout();
@@ -1146,7 +1220,146 @@ function renderScoreboard(){
   sb.style.display='flex';
 }
 
-/* ---------- 排賽 Modal ---------- */
+/* ===================================================================
+   賽程預覽：依週分段的成品賽程表，可篩選單一球隊
+   - previewTeam：'all' 或某隊 id
+   - 未排滿時頂部顯示草稿提醒
+   - 篩選單隊時標主/客場、顯示該隊缺額
+   =================================================================== */
+let previewTeam='all';
+function setPreviewTeam(v){previewTeam=v;renderPreview()}
+function renderPreview(){
+  // 隊伍下拉
+  const sel=document.getElementById('previewTeamSel');
+  if(sel){
+    const prev=previewTeam;
+    sel.innerHTML=`<option value="all">全部球隊</option>`+
+      state.teams.map(t=>`<option value="${t.id}"${prev===t.id?' selected':''}>${t.name}</option>`).join('');
+    if(previewTeam!=='all'&&!state.teams.some(t=>t.id===previewTeam))previewTeam='all';
+    sel.value=previewTeam;
+  }
+
+  const cont=document.getElementById('previewContainer');
+  const bannerEl=document.getElementById('previewBanner');
+
+  // 取所有已排比賽，依日期+時間排序
+  const all=Object.entries(state.matches).map(([k,v])=>{
+    const[date,time]=k.split('|');
+    return {date,time,home:v.home,away:v.away};
+  }).sort((a,b)=> a.date===b.date? a.time.localeCompare(b.time):a.date.localeCompare(b.date));
+
+  // 依篩選過濾
+  const filtered = previewTeam==='all' ? all
+    : all.filter(m=>m.home===previewTeam||m.away===previewTeam);
+
+  // ---- 提醒橫幅 ----
+  const total=gamesTotal();
+  const scheduled=all.length;
+  const remain=total-scheduled;
+  if(previewTeam==='all'){
+    if(remain>0){
+      bannerEl.innerHTML=`<div class="pv-banner draft"><span class="pv-ico">📝</span>
+        <div>目前已排 <b>${scheduled}</b> / ${total} 場，尚有 <b>${remain}</b> 場未排。<b>此為進行中的草稿</b>，非最終賽程。</div></div>`;
+    }else{
+      bannerEl.innerHTML=`<div class="pv-banner done"><span class="pv-ico">✅</span>
+        <div>已排滿 <b>${total}</b> 場例行賽。</div></div>`;
+    }
+  }else{
+    // 單隊：算主客場缺額
+    const t=team(previewTeam);
+    const ST=sideTarget();
+    let hc=0,ac=0;
+    all.forEach(m=>{if(m.home===previewTeam)hc++;if(m.away===previewTeam)ac++});
+    const hRemain=ST-hc, aRemain=ST-ac;
+    const parts=[];
+    if(hRemain>0)parts.push(`主場還缺 <b>${hRemain}</b> 場`);
+    if(aRemain>0)parts.push(`客場還缺 <b>${aRemain}</b> 場`);
+    const lack = parts.length? parts.join('、') : '主客場皆已排滿';
+    const cls = parts.length? 'draft':'done';
+    const ico = parts.length? '📝':'✅';
+    bannerEl.innerHTML=`<div class="pv-banner ${cls}"><span class="pv-ico">${ico}</span>
+      <div><b>${t?t.name:''}</b>：已排 ${hc} 主 / ${ac} 客（各目標 ${ST}）。${lack}。</div></div>`;
+  }
+
+  // ---- 無資料 ----
+  if(filtered.length===0){
+    cont.innerHTML=`<div class="pv-week"><div class="pv-empty">
+      <div class="big">${previewTeam==='all'?'目前尚未排入任何比賽':'這支球隊目前沒有已排的比賽'}</div>
+      到「排程」分頁點格子排入比賽後，這裡就會顯示。</div></div>`;
+    return;
+  }
+
+  // 共用：渲染單場列（pvRow）
+  function pvRow(m){
+    const d=parseYMD(m.date);
+    const h=team(m.home), a=team(m.away);
+    const tent=matchTentative(m.date,m.time,m.home);
+    const venue=h?h.venue:'';
+    let homeTag='',awayTag='';
+    if(previewTeam!=='all'){
+      if(m.home===previewTeam)homeTag='<span class="ptag home">主</span>';
+      if(m.away===previewTeam)awayTag='<span class="ptag away">客</span>';
+    }
+    const awayMark = m.away==='TBD'
+      ? `<span class="pc" style="background:repeating-linear-gradient(45deg,#c4ccd6,#c4ccd6 3px,#eef1f5 3px,#eef1f5 6px)"></span>`
+      : pvMark(a);
+    return `<div class="pv-row${tent?' tent':''}">
+      <span class="pv-date">${m.date.replace(/-/g,'/')}<span class="pdow">${DOW[d.getDay()]}</span></span>
+      <span class="pv-time">${m.time}</span>
+      <span class="pv-teams">
+        <span class="pv-side">${pvMark(h)}${teamName(m.home)}${homeTag}</span>
+        <span class="pv-vs">VS</span>
+        <span class="pv-side">${awayMark}${teamName(m.away)}${awayTag}</span>
+      </span>
+      <span class="pv-venue">📍 ${venue}</span>
+      <span class="pv-status">${tent?'<span class="ts">協調中</span>':''}</span>
+    </div>`;
+  }
+
+  // ---- 單隊：連續列表（不分週，一場接一場最好掃視）----
+  if(previewTeam!=='all'){
+    let html=`<div class="pv-week"><div class="pv-week-head">
+      <span class="pwno">${team(previewTeam)?.name||''} 整季賽程</span>
+      <span class="pwcount">${filtered.length} 場</span></div>`;
+    filtered.forEach(m=>{html+=pvRow(m)});
+    html+=`</div>`;
+    cont.innerHTML=html;
+    return;
+  }
+
+  // ---- 全部隊伍：依週分段 ----
+  const weeks={};
+  filtered.forEach(m=>{
+    const wk=ymd(mondayOf(parseYMD(m.date)));
+    (weeks[wk]=weeks[wk]||[]).push(m);
+  });
+  // 週序號要對齊整季（用所有賽日的週順序，而非只有已排的），讓 W 編號與排程頁一致
+  const allWeekKeys=[...new Set(buildGameSlots().map(s=>ymd(mondayOf(parseYMD(s.date)))))].sort();
+  const weekNo={};
+  allWeekKeys.forEach((wk,i)=>weekNo[wk]=i+1);
+
+  let html='';
+  Object.keys(weeks).sort().forEach(wk=>{
+    const monday=parseYMD(wk), sunday=addDays(monday,6);
+    const wms=weeks[wk].sort((a,b)=> a.date===b.date? a.time.localeCompare(b.time):a.date.localeCompare(b.date));
+    const wn=weekNo[wk]||'–';
+    html+=`<div class="pv-week">
+      <div class="pv-week-head">
+        <span class="pwno">W${wn}</span>
+        <span class="pwrange">${pad(monday.getMonth()+1)}/${pad(monday.getDate())} – ${pad(sunday.getMonth()+1)}/${pad(sunday.getDate())}</span>
+        <span class="pwcount">${wms.length} 場</span>
+      </div>`;
+    wms.forEach(m=>{html+=pvRow(m)});
+    html+=`</div>`;
+  });
+  cont.innerHTML=html;
+}
+// 預覽用的隊伍圖示（LOGO 或色塊，20px）
+function pvMark(t){
+  if(!t)return `<span class="pc" style="background:#cbd2da"></span>`;
+  if(t.logo)return `<img class="pl" src="${t.logo}" alt="${t.name}">`;
+  return `<span class="pc" style="background:${t.color}"></span>`;
+}
 let modalCtx=null;
 function openModal(date,time){
   if(leagueBlackoutReason(date)){toast('此日為全聯盟禁排，無法排賽',true);return}
