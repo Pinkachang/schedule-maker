@@ -393,6 +393,8 @@ table.tbl tr:last-child td{border-bottom:none}
 
 /* ---------- 公平性檢視表 ---------- */
 .fair-tbl th.grp{text-align:center;border-bottom:1px solid var(--line);background:#f7f9fb}
+.fair-tbl th[rowspan]{vertical-align:middle}
+.fair-tbl th.fcol-3in{text-align:center;white-space:nowrap}
 .fair-tbl th.grp-wend{color:var(--court)}
 .fair-tbl td.fnum{text-align:center;font-weight:600;font-variant-numeric:tabular-nums}
 .fair-tbl td.fnum.fair-hi{background:#fdecec;color:var(--bad);font-weight:800}
@@ -1647,7 +1649,7 @@ function renderFairness(){
       <th rowspan="2">隊伍</th>
       <th colspan="2" class="grp">平日（一～五）</th>
       <th colspan="2" class="grp grp-wend">假日（六、日）</th>
-      <th rowspan="2">一週三戰<br>次數</th>
+      <th rowspan="2" class="fcol-3in">一週三戰次數</th>
     </tr>
     <tr><th>主場</th><th>客場</th><th class="grp-wend">主場</th><th class="grp-wend">客場</th></tr>`;
   state.teams.forEach(t=>{
