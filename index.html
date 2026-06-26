@@ -454,6 +454,11 @@ table.tbl tr:last-child td{border-bottom:none}
 .tp-btn .c{width:12px;height:12px;border-radius:4px;flex-shrink:0}
 .tp-btn:disabled{opacity:.38;cursor:not-allowed}
 .tp-btn .dis-reason{font-size:10px;color:var(--lock);font-weight:500;margin-left:auto}
+/* 白名單外：可選但橘色虛線框警示（球團未提供此主場日，選後補檔期） */
+.tp-btn.outside{border-color:var(--court);border-style:dashed;background:#fffaf4}
+.tp-btn.outside:hover:not(:disabled){background:#fff3e6}
+.tp-btn.outside.sel{background:#fff3e6;border-style:solid}
+.tp-btn .dis-reason.out{color:var(--court);font-weight:700}
 
 .toast{
   position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
@@ -739,6 +744,32 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- 白名單外排主場：補檔期確認 box -->
+<div class="overlay" id="availConfirm">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-head">
+      <h3>此日不在可用檔期內</h3>
+      <button class="mclose" onclick="closeAvailConfirm()">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="margin:0 0 14px;font-size:13.5px;line-height:1.6">
+        <b id="acTeam"></b> 在 <b id="acWhen"></b> 並不在球團已回報的主場可用檔期內。<br>
+        若仍要排入，系統會自動補一筆該隊這天的可用檔期。請選擇這筆檔期的狀態：
+      </p>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <button class="btn accent" style="justify-content:center" onclick="confirmAvail('tentative')">🤝 標為協調中並排入</button>
+        <button class="btn" style="justify-content:center" onclick="confirmAvail('confirmed')">✓ 標為確定並排入</button>
+      </div>
+      <p class="tiny muted" style="margin:12px 0 0;line-height:1.5">
+        建議先標「協調中」，待與球團確認場地後，到「禁排與場館」把該筆檔期切回「確定」。
+      </p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" onclick="closeAvailConfirm()">取消</button>
+    </div>
+  </div>
+</div>
 
 <script>
 /* ===================================================================
@@ -1475,18 +1506,18 @@ function renderPickers(){
 
   // 主場
   homeBox.innerHTML=state.teams.map(t=>{
-    let dis='',reason='';
+    let dis='',reason='',outside=false;
     const tb=teamBlackoutReason(t.id,date);
     if(tb){dis='disabled';reason='禁排'}
-    else if(venueBlocked(t.id,date,time)){dis='disabled';reason='非可用檔期'}
     else if(usedToday.has(t.id)){dis='disabled';reason='當日已出賽'}      // 需求3
     else if((homeCnt[t.id]||0)>=HT){dis='disabled';reason='主場已滿'}      // 需求1
     else if(modalCtx.away&&modalCtx.away!=='TBD'&&(pairCnt[t.id+'>'+modalCtx.away]||0)>=HR){dis='disabled';reason='對戰已滿'} // 需求2
-    if(t.id===modalCtx.away){dis='disabled';reason='已選為客隊'}
+    else if(venueBlocked(t.id,date,time)){outside=true;reason='白名單外'}  // 可選但標橘：球團未提供此主場日，選後補檔期
+    if(t.id===modalCtx.away){dis='disabled';reason='已選為客隊';outside=false}
     const sel=t.id===modalCtx.home?'sel':'';
-    return `<button class="tp-btn ${sel}" ${dis} onclick="pickTeam('home','${t.id}')">
+    return `<button class="tp-btn ${sel}${outside?' outside':''}" ${dis} onclick="pickTeam('home','${t.id}')">
       ${teamMark(t,18,'clogo')}${t.name}
-      ${reason?`<span class="dis-reason">${reason}</span>`:''}</button>`;
+      ${reason?`<span class="dis-reason${outside?' out':''}">${reason}</span>`:''}</button>`;
   }).join('');
   // 客場
   awayBox.innerHTML=state.teams.map(t=>{
@@ -1513,8 +1544,39 @@ function pickTeam(side,id){
 function confirmMatch(){
   if(!modalCtx.home||!modalCtx.away){toast('請選擇主場與客場隊伍',true);return}
   if(modalCtx.home===modalCtx.away){toast('主客場不可同隊',true);return}
+  const {date,time}=modalCtx;
+  // 主隊在這天是否為「白名單外」（球團未提供此主場日）
+  if(venueBlocked(modalCtx.home,date,time)){
+    openAvailConfirm();   // 跳補檔期確認 box，選完狀態才真正排入
+    return;
+  }
+  doPlaceMatch();
+}
+// 真正把比賽寫入
+function doPlaceMatch(){
   state.matches[modalCtx.key]={home:modalCtx.home,away:modalCtx.away};
   closeModal();renderAll();toast('已排入');
+}
+// 補檔期確認 box：白名單外排主場時，選確定/協調中，反向補一筆 venueAvail
+function openAvailConfirm(){
+  const {date,time}=modalCtx;
+  const tname=teamName(modalCtx.home);
+  document.getElementById('acTeam').textContent=tname;
+  document.getElementById('acWhen').textContent=`${fmtDate(date)}（${DOW[parseYMD(date).getDay()]}）${time}`;
+  document.getElementById('availConfirm').classList.add('show');
+}
+function closeAvailConfirm(){document.getElementById('availConfirm').classList.remove('show')}
+// 使用者在 box 選了狀態 → 補檔期 + 排入
+function confirmAvail(status){   // status: 'confirmed' | 'tentative'
+  const {date,time}=modalCtx;
+  const teamId=modalCtx.home;
+  // 反向補一筆該隊該日該時段的可用檔期（去重）
+  if(!state.venueAvail.some(v=>v.teamId===teamId&&v.date===date&&v.time===time)){
+    state.venueAvail.push({teamId,date,time,status});
+  }
+  closeAvailConfirm();
+  doPlaceMatch();
+  toast(status==='tentative'?'已補協調中檔期並排入':'已補確定檔期並排入');
 }
 function removeMatch(){
   delete state.matches[modalCtx.key];closeModal();renderAll();toast('已移除');
