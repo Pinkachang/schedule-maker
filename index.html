@@ -251,6 +251,15 @@ table.tbl tr:last-child td{border-bottom:none}
   display:flex;align-items:center;gap:4px;flex-wrap:wrap;
   background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
   padding:9px 14px;margin-bottom:16px;box-shadow:var(--shadow);
+  position:sticky;top:104px;z-index:35;
+}
+/* 吸頂時加強底部陰影，與下方週行事曆做出層次 */
+.scoreboard.stuck{
+  border-radius:0 0 var(--radius) var(--radius);
+  box-shadow:0 6px 14px -6px rgba(16,24,40,.18),0 1px 3px rgba(16,24,40,.1);
+}
+.scoreboard .sb-scroll{
+  display:flex;align-items:center;gap:4px;flex-wrap:wrap;flex:1;min-width:0;
 }
 .scoreboard .sb-title{
   font-size:11.5px;font-weight:700;color:var(--ink-soft);margin-right:6px;white-space:nowrap;
@@ -400,6 +409,7 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
       <div class="spacer" style="flex:1"></div>
       <span class="tiny muted" id="schedSummary"></span>
     </div>
+    <div id="sbSentinel" style="height:1px"></div>
     <div class="scoreboard" id="scoreboard" style="display:none"></div>
     <div id="weeksContainer"></div>
   </div>
@@ -1636,6 +1646,18 @@ function doExport(){
   exportExcel();
 }
 
+/* ---------- 計分板吸頂偵測（加 .stuck 顯示陰影）---------- */
+function setupScoreboardStick(){
+  const sentinel=document.getElementById('sbSentinel');
+  const sb=document.getElementById('scoreboard');
+  if(!sentinel||!sb||!('IntersectionObserver'in window))return;
+  // 哨兵在計分板上方；當哨兵被頂欄+分頁列遮住（離開視窗頂部）時，代表計分板已吸頂
+  const ob=new IntersectionObserver(([e])=>{
+    sb.classList.toggle('stuck', e.intersectionRatio<1 && e.boundingClientRect.top<110);
+  },{threshold:[0,1], rootMargin:'-104px 0px 0px 0px'});
+  ob.observe(sentinel);
+}
+
 /* ---------- 啟動 ---------- */
 function init(){
   loadEditorName();          // 先把本機記住的名字帶回頂欄
@@ -1644,6 +1666,7 @@ function init(){
   }
   renderTeamSelects();
   renderAll();
+  setupScoreboardStick();
 }
 init();
 
