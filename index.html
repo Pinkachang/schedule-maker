@@ -278,6 +278,18 @@ table.tbl tr:last-child td{border-bottom:none}
 .sb-team .sct b{font-weight:700}
 .sb-team .sct .full{color:var(--ok)}
 .sb-team.alldone{border-color:#bfe6d4;background:#f3fbf7}
+.sb-toggle{
+  border:1px solid var(--line);background:#fff;border-radius:20px;
+  padding:3px 11px;font-size:11.5px;font-weight:700;color:var(--court);
+  margin-right:4px;white-space:nowrap;
+}
+.sb-toggle:hover{background:#fff8f2;border-color:var(--court)}
+.sb-team.detail{padding:3px 11px}
+.sb-team .sct2{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.sb-team .sct2 .seg{white-space:nowrap}
+.sb-team .sct2 .seg b{font-weight:700;color:var(--ink)}
+.sb-team .sct2 .seg.wend{color:var(--court);padding-left:7px;border-left:1px solid var(--line-soft)}
+.sb-team .sct2 .seg.wend b{color:var(--court-dark)}
 
 /* ---------- 賽程預覽 ---------- */
 .preview-toolbar{
@@ -378,6 +390,17 @@ table.tbl tr:last-child td{border-bottom:none}
 .matrix .cnt.partial{color:var(--warn)}
 .matrix .cnt.zero{color:var(--lock)}
 .matrix .cnt.over{color:#fff;background:var(--bad);padding:2px 7px;border-radius:5px;font-weight:800}
+
+/* ---------- 公平性檢視表 ---------- */
+.fair-tbl th.grp{text-align:center;border-bottom:1px solid var(--line);background:#f7f9fb}
+.fair-tbl th.grp-wend{color:var(--court)}
+.fair-tbl td.fnum{text-align:center;font-weight:600;font-variant-numeric:tabular-nums}
+.fair-tbl td.fnum.fair-hi{background:#fdecec;color:var(--bad);font-weight:800}
+.fair-tbl td.fnum.fair-lo{background:#eaf4fb;color:#2e5589;font-weight:800}
+.fair-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--ink-soft);align-items:center}
+.fair-legend .fk{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:3px}
+.fair-legend .fk-hi{background:#fdecec;border:1px solid #f1b9b6}
+.fair-legend .fk-lo{background:#eaf4fb;border:1px solid #bcd6ea}
 
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
 .stat{
@@ -538,6 +561,11 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
         <p class="hint" id="teamCountHint"></p>
         <div style="overflow-x:auto" id="teamCountWrap"></div>
       </div>
+    </div>
+    <div class="card">
+      <h3>⚖ 公平性檢視（平日／假日 主客場分配）</h3>
+      <p class="hint">假日（週六日）通常票房較好、平日（週一～週五）客場移動負擔不同，這裡列出每隊在平日與假日各排了幾場主／客場，以及整季「一週三戰」發生次數，方便檢視分配是否平均。<b>同一欄中最高與最低相差較大者會標色</b>，僅供你判斷，工具不替你定義公平。</p>
+      <div style="overflow-x:auto" id="fairnessWrap"></div>
     </div>
     <div class="card">
       <h3>衝突與提醒 <span id="issueCount" class="muted tiny"></span></h3>
@@ -1195,27 +1223,78 @@ function renderSchedule(){
   renderScoreboard();
 }
 
-/* ---------- 排程頁迷你計分板（A 版：每隊主客場數，達標轉綠）---------- */
+/* ===================================================================
+   共用統計：每隊平日/假日主客場數、一週三戰次數
+   - 平日＝週一～週五（依使用者定義，週五算平日）；假日＝週六、週日
+   - 一週三戰次數＝該隊整季有幾個「單週出賽 ≥3 場」的週
+   回傳 { [teamId]: {wkHome,wkAway,wendHome,wendAway,home,away,threeIn} }
+   =================================================================== */
+function isWeekend(dateStr){const wd=parseYMD(dateStr).getDay();return wd===0||wd===6}
+function teamStats(){
+  const st={};
+  state.teams.forEach(t=>st[t.id]={wkHome:0,wkAway:0,wendHome:0,wendAway:0,home:0,away:0,threeIn:0});
+  const entries=Object.entries(state.matches).map(([k,v])=>{
+    const[date,time]=k.split('|');return{date,time,home:v.home,away:v.away};
+  });
+  entries.forEach(m=>{
+    const wend=isWeekend(m.date);
+    if(st[m.home]){st[m.home].home++; wend?st[m.home].wendHome++:st[m.home].wkHome++;}
+    if(m.away!=='TBD'&&st[m.away]){st[m.away].away++; wend?st[m.away].wendAway++:st[m.away].wkAway++;}
+  });
+  // 一週三戰次數：依週統計每隊出賽場數，≥3 即該週計一次
+  const byWeek={};
+  entries.forEach(m=>{
+    const wk=ymd(mondayOf(parseYMD(m.date)));
+    (byWeek[wk]=byWeek[wk]||[]).push(m);
+  });
+  Object.values(byWeek).forEach(wms=>{
+    const gp={};
+    wms.forEach(m=>{gp[m.home]=(gp[m.home]||0)+1;if(m.away!=='TBD')gp[m.away]=(gp[m.away]||0)+1});
+    Object.entries(gp).forEach(([tid,c])=>{if(c>=3&&st[tid])st[tid].threeIn++});
+  });
+  return st;
+}
+
+/* ---------- 排程頁迷你計分板（精簡/詳細可切換，狀態記在本機）---------- */
+const LS_SB_MODE='tpbl_scoreboard_mode';
+let sbMode='simple';  // 'simple' | 'detail'
+function loadScoreboardMode(){
+  try{const m=localStorage.getItem(LS_SB_MODE);if(m==='detail'||m==='simple')sbMode=m;}catch(e){}
+}
+function toggleScoreboardMode(){
+  sbMode=sbMode==='simple'?'detail':'simple';
+  try{localStorage.setItem(LS_SB_MODE,sbMode)}catch(e){}
+  renderScoreboard();
+}
 function renderScoreboard(){
   const sb=document.getElementById('scoreboard');
   if(!sb)return;
   if(state.teams.length===0){sb.style.display='none';return}
-  const ms=Object.values(state.matches);
-  const homeCount={},awayCount={};
-  state.teams.forEach(t=>{homeCount[t.id]=0;awayCount[t.id]=0});
-  ms.forEach(m=>{homeCount[m.home]=(homeCount[m.home]||0)+1;if(m.away!=='TBD')awayCount[m.away]=(awayCount[m.away]||0)+1});
   const ST=sideTarget();
-  let html=`<span class="sb-title">即時場數</span>`;
+  const stats=teamStats();
+  const detail=sbMode==='detail';
+  const toggle=`<button class="sb-toggle" onclick="toggleScoreboardMode()" title="切換精簡／詳細，會記住你的選擇">${detail?'詳細 ▾':'精簡 ▸'}</button>`;
+  let html=`<span class="sb-title">即時場數</span>${toggle}<div class="sb-scroll">`;
   state.teams.forEach(t=>{
-    const h=homeCount[t.id],a=awayCount[t.id];
-    const hFull=h>=ST,aFull=a>=ST;
+    const s=stats[t.id];
+    const hFull=s.home>=ST,aFull=s.away>=ST;
     const allDone=hFull&&aFull;
-    html+=`<span class="sb-team${allDone?' alldone':''}" title="${t.name}　主場 ${h}/${ST}、客場 ${a}/${ST}">
-      ${teamMark(t,15,'si')}
-      <span class="snm">${t.name}</span>
-      <span class="sct">主<b class="${hFull?'full':''}">${h}</b>/${ST} 客<b class="${aFull?'full':''}">${a}</b>/${ST}</span>
-    </span>`;
+    if(detail){
+      // 詳細：平日主/客 ‧ 假日主/客
+      html+=`<span class="sb-team detail${allDone?' alldone':''}" title="${t.name}　平日 主${s.wkHome}/客${s.wkAway}　假日 主${s.wendHome}/客${s.wendAway}">
+        ${teamMark(t,15,'si')}
+        <span class="snm">${t.name}</span>
+        <span class="sct2"><span class="seg">平日 <b>${s.wkHome}</b>主<b>${s.wkAway}</b>客</span><span class="seg wend">假日 <b>${s.wendHome}</b>主<b>${s.wendAway}</b>客</span></span>
+      </span>`;
+    }else{
+      html+=`<span class="sb-team${allDone?' alldone':''}" title="${t.name}　主場 ${s.home}/${ST}、客場 ${s.away}/${ST}">
+        ${teamMark(t,15,'si')}
+        <span class="snm">${t.name}</span>
+        <span class="sct">主<b class="${hFull?'full':''}">${s.home}</b>/${ST} 客<b class="${aFull?'full':''}">${s.away}</b>/${ST}</span>
+      </span>`;
+    }
   });
+  html+=`</div>`;
   sb.innerHTML=html;
   sb.style.display='flex';
 }
@@ -1495,6 +1574,9 @@ function renderOverview(){
   tc+=`</table>`;
   document.getElementById('teamCountWrap').innerHTML=tc;
 
+  // 公平性檢視表（平日/假日主客 + 一週三戰次數，落差大的標色）
+  renderFairness();
+
   // 衝突清單
   const {issues}=checkConflicts();
   const badN=issues.filter(i=>i.level==='bad').length;
@@ -1535,6 +1617,56 @@ function renderOverview(){
       }).join('');
     }
   }
+}
+
+/* ---------- 公平性檢視表 ---------- */
+function renderFairness(){
+  const wrap=document.getElementById('fairnessWrap');
+  if(!wrap)return;
+  const stats=teamStats();
+  // 各欄位收集數值，找出最大/最小以標色（落差>=2 才標，避免小差異也亮）
+  const cols=['wkHome','wkAway','wendHome','wendAway','threeIn'];
+  const colMax={},colMin={};
+  cols.forEach(c=>{
+    const vals=state.teams.map(t=>stats[t.id][c]);
+    colMax[c]=Math.max(...vals);colMin[c]=Math.min(...vals);
+  });
+  // 是否有任何已排比賽（全 0 時不標色）
+  const anyMatch=Object.keys(state.matches).length>0;
+
+  function cell(c,v){
+    let cls='';
+    if(anyMatch && colMax[c]-colMin[c]>=2){
+      if(v===colMax[c])cls=' fair-hi';        // 該欄最多
+      else if(v===colMin[c])cls=' fair-lo';   // 該欄最少
+    }
+    return `<td class="fnum${cls}">${v}</td>`;
+  }
+  let html=`<table class="tbl fair-tbl">
+    <tr>
+      <th rowspan="2">隊伍</th>
+      <th colspan="2" class="grp">平日（一～五）</th>
+      <th colspan="2" class="grp grp-wend">假日（六、日）</th>
+      <th rowspan="2">一週三戰<br>次數</th>
+    </tr>
+    <tr><th>主場</th><th>客場</th><th class="grp-wend">主場</th><th class="grp-wend">客場</th></tr>`;
+  state.teams.forEach(t=>{
+    const s=stats[t.id];
+    html+=`<tr>
+      <td><span style="display:inline-flex;align-items:center;gap:6px">${teamMark(t,16,'mlogo')}${t.name}</span></td>
+      ${cell('wkHome',s.wkHome)}${cell('wkAway',s.wkAway)}
+      ${cell('wendHome',s.wendHome)}${cell('wendAway',s.wendAway)}
+      ${cell('threeIn',s.threeIn)}
+    </tr>`;
+  });
+  html+=`</table>`;
+  // 圖例
+  html+=`<div class="fair-legend">
+    <span><span class="fk fk-hi"></span> 該欄最多</span>
+    <span><span class="fk fk-lo"></span> 該欄最少</span>
+    <span class="muted">（同欄最多與最少相差 ≥2 才標示）</span>
+  </div>`;
+  wrap.innerHTML=html;
 }
 function jumpTo(wk){
   switchTab('schedule');
@@ -2014,6 +2146,7 @@ function setupScoreboardStick(){
 /* ---------- 啟動 ---------- */
 function init(){
   loadEditorName();          // 先把本機記住的名字帶回頂欄
+  loadScoreboardMode();      // 帶回上次的計分板精簡/詳細選擇
   if(!loadLocal()){          // 有本機暫存就接續上次，沒有才用初始狀態
     state=blankState();
   }
