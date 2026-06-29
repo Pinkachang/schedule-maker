@@ -393,6 +393,30 @@ select.scope-sel{padding:4px 6px;font-size:12px;min-width:96px;width:auto}
 .matrix .cnt.zero{color:var(--lock)}
 .matrix .cnt.over{color:#fff;background:var(--bad);padding:2px 7px;border-radius:5px;font-weight:800}
 
+/* ---------- 排程頁：對戰表浮動鈕與浮層 ---------- */
+.matrix-fab{
+  position:fixed;right:22px;bottom:24px;z-index:60;
+  background:var(--net);color:#fff;border:none;border-radius:24px;
+  padding:11px 18px;font-size:13.5px;font-weight:700;
+  box-shadow:0 6px 18px rgba(16,24,40,.28);display:inline-flex;align-items:center;gap:7px;
+  transition:.15s;
+}
+.matrix-fab:hover{background:var(--court);transform:translateY(-1px)}
+.matrix-fab .mf-ico{font-size:15px;line-height:1}
+/* 非排程分頁時隱藏 */
+body:not(.tab-schedule) .matrix-fab{display:none}
+.mp-three{margin-top:16px;border-top:1px solid var(--line);padding-top:14px}
+.mp-three-title{font-size:13px;font-weight:700;margin-bottom:10px;color:var(--ink)}
+.mp-three-list{display:flex;flex-wrap:wrap;gap:8px}
+.mp-three-item{
+  display:inline-flex;align-items:center;gap:6px;padding:4px 11px;
+  border:1px solid var(--line-soft);border-radius:20px;background:#fff;font-size:12.5px;
+}
+.mp-three-item .mp-tn{font-weight:600}
+.mp-three-item b{font-weight:800;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.mp-three-item.has{border-color:var(--warn);background:var(--warn-bg)}
+.mp-three-item.has b{color:var(--warn)}
+
 /* ---------- 公平性檢視表 ---------- */
 .fair-tbl th.grp{text-align:center;border-bottom:1px solid var(--line);background:#f7f9fb}
 .fair-tbl th[rowspan]{vertical-align:middle}
@@ -532,6 +556,9 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
     <div id="sbSentinel" style="height:1px"></div>
     <div class="scoreboard" id="scoreboard" style="display:none"></div>
     <div id="weeksContainer"></div>
+    <button class="matrix-fab" id="matrixFab" onclick="openMatrixPanel()" title="查看目前對戰組合進度（不影響排程位置）">
+      <span class="mf-ico">▦</span> 對戰表
+    </button>
   </div>
 
   <!-- ============ 賽程預覽 ============ -->
@@ -777,6 +804,24 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
     </div>
     <div class="modal-foot">
       <button class="btn ghost" onclick="closeAvailConfirm()">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 排程頁：對戰組合進度浮層 -->
+<div class="overlay" id="matrixPanel" onclick="if(event.target===this)closeMatrixPanel()">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-head">
+      <h3>對戰組合進度</h3>
+      <span class="when-tag" id="matrixPanelHint"></span>
+      <button class="mclose" onclick="closeMatrixPanel()">×</button>
+    </div>
+    <div class="modal-body" style="max-height:70vh;overflow:auto">
+      <div style="overflow-x:auto" id="matrixPanelWrap"></div>
+      <div class="mp-three">
+        <div class="mp-three-title">一週三戰次數</div>
+        <div class="mp-three-list" id="matrixPanelThree"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -1158,6 +1203,7 @@ function switchTab(t){
   document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById('view-'+t).classList.add('active');
+  document.body.classList.toggle('tab-schedule', t==='schedule');  // 控制對戰表浮動鈕只在排程頁顯示
   if(t==='schedule')renderSchedule();
   if(t==='preview')renderPreview();
   if(t==='overview')renderOverview();
@@ -1604,6 +1650,46 @@ function removeMatch(){
 }
 
 /* ---------- 進度總覽 ---------- */
+// 對戰矩陣 HTML（進度總覽與排程頁浮層共用）
+function buildMatrixHTML(){
+  const ms=Object.values(state.matches);
+  const pair={};
+  ms.forEach(m=>{if(m.away==='TBD')return;const k=m.home+'>'+m.away;pair[k]=(pair[k]||0)+1});
+  const HR=homeRounds();
+  let mx=`<table class="matrix"><tr><th>主＼客</th>`;
+  state.teams.forEach(t=>mx+=`<th><span style="color:${t.color}">●</span> ${t.name}</th>`);
+  mx+=`</tr>`;
+  state.teams.forEach(h=>{
+    mx+=`<tr><th><span style="color:${h.color}">●</span> ${h.name}</th>`;
+    state.teams.forEach(a=>{
+      if(h.id===a.id){mx+=`<td class="diag">—</td>`;return}
+      const c=pair[h.id+'>'+a.id]||0;
+      const cls=c>HR?'over':c===HR?'done':c>0?'partial':'zero';
+      mx+=`<td><span class="cnt ${cls}">${c}/${HR}</span></td>`;
+    });
+    mx+=`</tr>`;
+  });
+  mx+=`</table>`;
+  return mx;
+}
+
+// 排程頁對戰組合浮層
+function openMatrixPanel(){
+  document.getElementById('matrixPanelWrap').innerHTML=buildMatrixHTML();
+  // 一週三戰次數（沿用 teamStats 的 threeIn）
+  const stats=teamStats();
+  const list=state.teams.map(t=>{
+    const n=stats[t.id].threeIn;
+    return `<span class="mp-three-item${n>0?' has':''}">
+      ${teamMark(t,16,'mlogo')}<span class="mp-tn">${t.name}</span><b>${n}</b></span>`;
+  }).join('');
+  document.getElementById('matrixPanelThree').innerHTML=list;
+  const HR=homeRounds();
+  document.getElementById('matrixPanelHint').textContent=`每格＝主場對戰已排/目標 ${HR}　綠＝完成 黃＝未滿 灰＝0 紅＝超量`;
+  document.getElementById('matrixPanel').classList.add('show');
+}
+function closeMatrixPanel(){document.getElementById('matrixPanel').classList.remove('show')}
+
 function renderOverview(){
   const ms=Object.values(state.matches);
   // 統計
@@ -1622,24 +1708,7 @@ function renderOverview(){
     <div class="stat"><div class="label">協調中場次</div><div class="val" style="color:${tentList.length?'var(--warn)':'var(--ink)'}">${tentList.length}</div></div>`;
 
   // 對戰矩陣（home 列 vs away 欄，目標各 3；超過標紅）
-  const pair={};
-  ms.forEach(m=>{if(m.away==='TBD')return;const k=m.home+'>'+m.away;pair[k]=(pair[k]||0)+1});
-  let mx=`<table class="matrix"><tr><th>主＼客</th>`;
-  state.teams.forEach(t=>mx+=`<th><span style="color:${t.color}">●</span> ${t.name}</th>`);
-  mx+=`</tr>`;
-  state.teams.forEach(h=>{
-    mx+=`<tr><th><span style="color:${h.color}">●</span> ${h.name}</th>`;
-    state.teams.forEach(a=>{
-      if(h.id===a.id){mx+=`<td class="diag">—</td>`;return}
-      const c=pair[h.id+'>'+a.id]||0;
-      const HR=homeRounds();
-      const cls=c>HR?'over':c===HR?'done':c>0?'partial':'zero';
-      mx+=`<td><span class="cnt ${cls}">${c}/${HR}</span></td>`;
-    });
-    mx+=`</tr>`;
-  });
-  mx+=`</table>`;
-  document.getElementById('matrixWrap').innerHTML=mx;
+  document.getElementById('matrixWrap').innerHTML=buildMatrixHTML();
   const mh=document.getElementById('matrixHint');
   if(mh)mh.innerHTML=`每格＝該列隊伍 <b>在主場</b> 對該欄隊伍的已排場數（目標 ${homeRounds()}）。綠＝完成，黃＝未滿，灰＝0，<b style="color:var(--bad)">紅＝超過 ${homeRounds()} 場</b>。`;
   const th=document.getElementById('teamCountHint');
@@ -2250,6 +2319,11 @@ function init(){
   renderTeamSelects();
   renderAll();
   setupScoreboardStick();
+  document.body.classList.add('tab-schedule');  // 初始為排程頁
+  // Esc 關閉對戰表浮層
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'&&document.getElementById('matrixPanel').classList.contains('show'))closeMatrixPanel();
+  });
 }
 init();
 
