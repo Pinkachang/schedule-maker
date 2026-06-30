@@ -2438,7 +2438,7 @@ function exportExcel(){
   }).sort((a,b)=> a.date===b.date? a.time.localeCompare(b.time):a.date.localeCompare(b.date));
   ms.forEach((m,i)=>{
     const d=parseYMD(m.date);
-    const status=matchTentative(m.date,m.time,m.home)?'協調中':'';
+    const status=matchTentative(m.date,m.time,m.home)?'協調中':'確定';
     rows.push([i+1, fmtDate(m.date), DOW[d.getDay()], m.time, teamName(m.home), teamName(m.away), status]);
   });
   const ws=XLSX.utils.aoa_to_sheet(rows);
