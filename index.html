@@ -686,6 +686,13 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
         但本機暫存只綁這台電腦、這個瀏覽器——<b>換電腦、換瀏覽器、清除瀏覽資料就會不見</b>。要跨電腦或交給同事，仍請用右上角「💾 存檔」匯出 JSON。</p>
       <button class="btn" onclick="clearLocal()">🗑 清除本機暫存並重來</button>
     </div>
+
+    <div class="card" style="border-color:#f1c4c2">
+      <h3 style="color:var(--bad)">⚠ 清空賽程</h3>
+      <p class="hint">一鍵清掉<b>目前排好的所有比賽</b>，並連帶刪除<b>所有「協調中」的可用檔期</b>。隊伍、賽季、時段、禁排、確定狀態的檔期都會保留。<br>
+        <b style="color:var(--bad)">此動作不可復原</b>，建議清空前先按下方「先下載備份」存一份 JSON。</p>
+      <button class="btn" style="border-color:var(--bad);color:var(--bad)" onclick="openClearSchedule()">🗑 清空所有賽程</button>
+    </div>
   </div>
 
   <!-- ============ 禁排與場館 ============ -->
@@ -823,6 +830,31 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
     </div>
     <div class="modal-foot">
       <button class="btn ghost" onclick="closeAvailConfirm()">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 清空賽程：二次確認框 -->
+<div class="overlay" id="clearSchedConfirm" onclick="if(event.target===this)closeClearSchedule()">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-head">
+      <h3 style="color:var(--bad)">⚠ 清空所有賽程</h3>
+      <button class="mclose" onclick="closeClearSchedule()">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="margin:0 0 12px;font-size:13.5px;line-height:1.7" id="clearSchedSummary"></p>
+      <p style="margin:0 0 14px;font-size:13px;line-height:1.6;color:var(--ink-soft)">
+        會保留：隊伍、賽季、時段、禁排、<b>確定狀態</b>的可用檔期。<br>
+        會刪除：<b style="color:var(--bad)">全部比賽</b>＋<b style="color:var(--bad)">全部協調中檔期</b>。
+      </p>
+      <div style="background:var(--warn-bg);border-radius:8px;padding:11px 13px;margin-bottom:6px">
+        <p style="margin:0 0 9px;font-size:12.5px;font-weight:600;color:var(--warn)">此動作不可復原，強烈建議先備份：</p>
+        <button class="btn sm" style="background:#fff" onclick="doSave()">💾 先下載備份 JSON</button>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeClearSchedule()">取消</button>
+      <button class="btn" style="background:var(--bad);border-color:var(--bad);color:#fff" onclick="doClearSchedule()">確認清空</button>
     </div>
   </div>
 </div>
@@ -974,6 +1006,25 @@ function clearLocal(){
   loadEditorName();
   renderTeamSelects();renderAll();
   toast('已清除本機暫存');
+}
+
+/* ---------- 清空賽程（範圍二：清比賽＋刪所有協調中檔期）---------- */
+function openClearSchedule(){
+  const nMatch=Object.keys(state.matches).length;
+  const nTent=state.venueAvail.filter(v=>v.status==='tentative').length;
+  document.getElementById('clearSchedSummary').innerHTML=
+    `即將刪除 <b style="color:var(--bad)">${nMatch} 場已排比賽</b> 與 <b style="color:var(--bad)">${nTent} 筆協調中檔期</b>。`;
+  document.getElementById('clearSchedConfirm').classList.add('show');
+}
+function closeClearSchedule(){document.getElementById('clearSchedConfirm').classList.remove('show')}
+function doClearSchedule(){
+  const nMatch=Object.keys(state.matches).length;
+  const nTent=state.venueAvail.filter(v=>v.status==='tentative').length;
+  state.matches={};                                              // 清空全部比賽
+  state.venueAvail=state.venueAvail.filter(v=>v.status!=='tentative');  // 刪所有協調中檔期，保留確定
+  closeClearSchedule();
+  renderAll();
+  toast(`已清空 ${nMatch} 場比賽、刪除 ${nTent} 筆協調中檔期`);
 }
 // 補齊舊資料缺的欄位（向後相容）
 function normalizeTeams(){
