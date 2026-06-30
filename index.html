@@ -206,6 +206,25 @@ select.scope-sel{padding:4px 6px;font-size:12px;min-width:96px;width:auto}
 .slot.locked:hover{border-color:var(--line);background:var(--lock-bg)}
 .slot.locked .lockmsg{font-size:10.5px;color:var(--lock);text-align:center;margin-top:4px}
 .slot.filled{border-style:solid;cursor:pointer}
+.slot.filled[draggable="true"]{cursor:grab}
+.slot.filled.dragging{opacity:.4;cursor:grabbing}
+/* 拖曳手柄（已排格右上，hover 才明顯） */
+.drag-handle{
+  position:absolute;top:5px;left:6px;font-size:11px;color:var(--lock);
+  cursor:grab;opacity:.35;transition:.12s;letter-spacing:-1px;
+}
+.slot.filled:hover .drag-handle{opacity:.8}
+/* drop 目標提示 */
+.slot.drop-ok{border-color:var(--court)!important;border-style:dashed!important;background:#fff3e6!important;border-width:2px!important}
+.slot.drop-no{border-color:var(--bad)!important;background:var(--bad-bg)!important}
+/* 空格白名單小色點 */
+.slot.empty .avail-dots{
+  display:flex;gap:3px;flex-wrap:wrap;justify-content:center;margin-top:5px;max-width:90%;
+}
+.slot.empty .avail-dots .ad{
+  width:7px;height:7px;border-radius:50%;border:1px solid rgba(0,0,0,.08);flex-shrink:0;
+}
+.slot.empty.has-avail{border-color:#d8c0a8}
 .slot.conflict{border-color:var(--bad)!important;background:var(--bad-bg)!important;border-width:1.5px}
 .slot.tentative{border-left:4px solid var(--warn)}
 .slot.tentative.conflict{border-left:4px solid var(--warn)}
@@ -1092,6 +1111,17 @@ function availEntry(teamId,dateStr,time){
   return state.venueAvail.find(v=>v.teamId===teamId && v.date===dateStr
     && (v.time===time||v.time==='全天'||!v.time)) || null;
 }
+// 某日某時段「有上傳白名單且命中」的隊伍清單（給空格小色點提示用）
+// 只列有上傳檔期的隊（沒上傳的到處可排，提示無意義）；回傳 [{team, status}]
+function availTeamsAt(dateStr,time){
+  const out=[];
+  state.teams.forEach(t=>{
+    if(!teamHasAvail(t.id))return;          // 沒上傳檔期 → 不提示
+    const e=availEntry(t.id,dateStr,time);
+    if(e)out.push({team:t,status:e.status});
+  });
+  return out;
+}
 // 某場比賽是否排在「協調中」檔期上（依主隊檔期狀態判定）
 function matchTentative(dateStr,time,homeId){
   const e=availEntry(homeId,dateStr,time);
@@ -1299,8 +1329,16 @@ function renderSchedule(){
           const conflict=slotFlags[key];
           const tentative=matchTentative(s.date,s.time,m.home);
           const h=team(m.home),a=team(m.away);
-          html+=`<div class="slot filled${conflict?' conflict':''}${tentative?' tentative':''}" onclick="openModal('${s.date}','${s.time}')">
+          html+=`<div class="slot filled${conflict?' conflict':''}${tentative?' tentative':''}" data-date="${s.date}" data-time="${s.time}"
+            draggable="true"
+            ondragstart="onSlotDragStart(event,'${s.date}','${s.time}')"
+            ondragend="onSlotDragEnd(event)"
+            ondragover="onSlotDragOver(event,'${s.date}','${s.time}')"
+            ondragleave="onSlotDragLeave(event)"
+            ondrop="onSlotDrop(event,'${s.date}','${s.time}')"
+            onclick="openModal('${s.date}','${s.time}')">
             <span class="stime">${s.time}</span>
+            <span class="drag-handle" title="拖曳可與同日其他時段對調">⠿</span>
             ${tentative?'<span class="tent-badge">協調中</span>':''}
             <div class="match">
               <div class="mteam">${teamMark(h,16,'mlogo')}${teamName(m.home)} <span class="home-badge">主</span></div>
@@ -1309,8 +1347,16 @@ function renderSchedule(){
             </div>
           </div>`;
         }else{
-          html+=`<div class="slot empty" onclick="openModal('${s.date}','${s.time}')">
-            <span class="stime">${s.time}</span><span class="add">＋</span></div>`;
+          // 空格：顯示白名單小色點（有上傳檔期且命中此時段的隊）
+          const avTeams=availTeamsAt(s.date,s.time);
+          const dots=avTeams.length?`<div class="avail-dots" title="可排主場：${avTeams.map(x=>x.team.name+(x.status==='tentative'?'(協調中)':'')).join('、')}">
+            ${avTeams.map(x=>`<span class="ad" style="background:${x.team.color}${x.status==='tentative'?';opacity:.45':''}"></span>`).join('')}</div>`:'';
+          html+=`<div class="slot empty${avTeams.length?' has-avail':''}" data-date="${s.date}" data-time="${s.time}"
+            ondragover="onSlotDragOver(event,'${s.date}','${s.time}')"
+            ondragleave="onSlotDragLeave(event)"
+            ondrop="onSlotDrop(event,'${s.date}','${s.time}')"
+            onclick="openModal('${s.date}','${s.time}')">
+            <span class="stime">${s.time}</span><span class="add">＋</span>${dots}</div>`;
         }
       });
       html+=`</div>`;
@@ -1540,6 +1586,65 @@ function pvMark(t){
   return `<span class="pc" style="background:${t.color}"></span>`;
 }
 let modalCtx=null;
+
+/* ===================================================================
+   拖曳換時段（限同一天內：時段對調或搬到同日空格）
+   - 拖曳來源：已排的格子；放置目標：同日的已排格（對調）或空格（搬移）
+   - 不同天：拒絕（依需求只允許同一天）
+   - 對調後若違反白名單/衝突：照做，靠既有標示提醒（不阻擋）
+   =================================================================== */
+let dragSrc=null;  // {date,time}
+function onSlotDragStart(e,date,time){
+  dragSrc={date,time};
+  e.dataTransfer.effectAllowed='move';
+  try{e.dataTransfer.setData('text/plain',`${date}|${time}`)}catch(_){}
+  e.currentTarget.classList.add('dragging');
+}
+function onSlotDragEnd(e){
+  e.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.slot.drop-ok,.slot.drop-no').forEach(el=>el.classList.remove('drop-ok','drop-no'));
+  dragSrc=null;
+}
+function onSlotDragOver(e,date,time){
+  if(!dragSrc)return;
+  const sameDay=(dragSrc.date===date);
+  const sameSlot=(dragSrc.date===date&&dragSrc.time===time);
+  if(sameDay&&!sameSlot){
+    e.preventDefault();                  // 允許 drop
+    e.dataTransfer.dropEffect='move';
+    e.currentTarget.classList.add('drop-ok');
+  }else if(!sameDay){
+    e.currentTarget.classList.add('drop-no');  // 視覺提示不可放（但不 preventDefault → 不能 drop）
+  }
+}
+function onSlotDragLeave(e){
+  e.currentTarget.classList.remove('drop-ok','drop-no');
+}
+function onSlotDrop(e,date,time){
+  e.preventDefault();
+  e.currentTarget.classList.remove('drop-ok','drop-no');
+  if(!dragSrc)return;
+  if(dragSrc.date!==date){toast('只能在同一天內換時段',true);return}
+  if(dragSrc.time===time)return;         // 放回原處，無動作
+  const srcKey=`${dragSrc.date}|${dragSrc.time}`;
+  const dstKey=`${date}|${time}`;
+  const srcM=state.matches[srcKey], dstM=state.matches[dstKey];
+  if(!srcM)return;
+  if(dstM){
+    // 兩格都有比賽 → 對調
+    state.matches[srcKey]=dstM;
+    state.matches[dstKey]=srcM;
+    toast('已對調兩時段的比賽');
+  }else{
+    // 目標是空格 → 搬移
+    state.matches[dstKey]=srcM;
+    delete state.matches[srcKey];
+    toast('已換時段');
+  }
+  dragSrc=null;
+  renderAll();
+}
+
 function openModal(date,time){
   if(leagueBlackoutReason(date)){toast('此日為全聯盟禁排，無法排賽',true);return}
   const key=`${date}|${time}`;
