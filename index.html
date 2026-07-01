@@ -170,6 +170,7 @@ select.scope-sel{padding:4px 6px;font-size:12px;min-width:96px;width:auto}
   background:#fafbfc;border-bottom:1px solid var(--line);
 }
 .week-head .wno{font-weight:800;color:var(--court);font-size:15px}
+.week-head .wno.wno-none{color:var(--lock);font-weight:600;font-size:13px}
 .week-head .wrange{color:var(--ink-soft);font-size:12.5px}
 .week-head .wnote{
   font-size:12px;color:var(--warn);background:var(--warn-bg);
@@ -937,6 +938,28 @@ function parseYMD(s){const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1
 function fmtDate(s){const d=parseYMD(s);return `${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())}`}
 function mondayOf(d){const x=new Date(d);const wd=(x.getDay()+6)%7;x.setDate(x.getDate()-wd);return x} // 週一
 function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x}
+
+/* ===================================================================
+   WEEK 編號（定義 B：只有「實際排了比賽」的週才算一週、由早到晚接續）
+   - 完全沒排比賽的週不占號（中間停賽週跳過，復賽接續上一個有比賽的週號）
+   - 回傳 { 週一日期字串(yyyy-mm-dd) : 週號 }
+   - 畫面、賽程預覽、匯出 Excel 三處共用，確保一致
+   =================================================================== */
+function weekNoMap(){
+  const wkSet=new Set();
+  Object.keys(state.matches).forEach(k=>{
+    const date=k.split('|')[0];
+    wkSet.add(ymd(mondayOf(parseYMD(date))));
+  });
+  const sorted=[...wkSet].sort();
+  const map={};
+  sorted.forEach((wk,i)=>map[wk]=i+1);
+  return map;
+}
+// 某場比賽（依日期）的週號，查不到回 null（該週沒有比賽時不會發生）
+function weekNoOf(dateStr){
+  return weekNoMap()[ymd(mondayOf(parseYMD(dateStr)))]||null;
+}
 function team(id){return state.teams.find(t=>t.id===id)}
 function teamName(id){if(id==='TBD')return '待訂';const t=team(id);return t?t.name:'?'}
 function uid(){return Math.random().toString(36).slice(2,9)}
@@ -1331,12 +1354,12 @@ function renderSchedule(){
 
   let total=0,filled=0;
   let html='';
-  let wIdx=0;
+  const wkNoMap=weekNoMap();   // 定義 B：只有排了比賽的週才有號
   Object.keys(weeks).sort().forEach(wk=>{
-    wIdx++;
     const monday=parseYMD(wk);
     const sunday=addDays(monday,6);
     const wkSlots=weeks[wk];
+    const wNo=wkNoMap[wk];      // 有比賽才有號，否則 undefined
     // 該週備註：聯盟禁排原因彙整
     const notes=new Set();
     wkSlots.forEach(s=>{const r=leagueBlackoutReason(s.date);if(r)notes.add(r)});
@@ -1348,7 +1371,7 @@ function renderSchedule(){
 
     html+=`<div class="week" data-wk="${wk}">
       <div class="week-head">
-        <span class="wno">W${wIdx}</span>
+        <span class="wno${wNo?'':' wno-none'}">${wNo?'W'+wNo:'—'}</span>
         <span class="wrange">${pad(monday.getMonth()+1)}/${pad(monday.getDate())} – ${pad(sunday.getMonth()+1)}/${pad(sunday.getDate())}</span>
         ${[...notes].map(n=>`<span class="wnote">🚫 ${n}</span>`).join('')}
         <span class="spacer"></span>
@@ -1609,10 +1632,8 @@ function renderPreview(){
     const wk=ymd(mondayOf(parseYMD(m.date)));
     (weeks[wk]=weeks[wk]||[]).push(m);
   });
-  // 週序號要對齊整季（用所有賽日的週順序，而非只有已排的），讓 W 編號與排程頁一致
-  const allWeekKeys=[...new Set(buildGameSlots().map(s=>ymd(mondayOf(parseYMD(s.date)))))].sort();
-  const weekNo={};
-  allWeekKeys.forEach((wk,i)=>weekNo[wk]=i+1);
+  // 週號用定義 B（只有排了比賽的週才編號、接續），與排程頁、匯出一致
+  const weekNo=weekNoMap();
 
   let html='';
   Object.keys(weeks).sort().forEach(wk=>{
@@ -2432,17 +2453,19 @@ function onLoadFile(e){
 
 /* ---------- 匯出 Excel（總賽程格式） ---------- */
 function exportExcel(){
-  const rows=[['2026-27 TPBL SCHEDULE'],[],['場次','日期','星期','時間','主場','客場','狀態']];
+  const rows=[['2026-27 TPBL SCHEDULE'],[],['場次','週次','日期','星期','時間','主場','客場','狀態']];
+  const wkMap=weekNoMap();   // 定義 B：只有排了比賽的週才編號、接續
   const ms=Object.entries(state.matches).map(([k,v])=>{
     const[date,time]=k.split('|');return{date,time,...v};
   }).sort((a,b)=> a.date===b.date? a.time.localeCompare(b.time):a.date.localeCompare(b.date));
   ms.forEach((m,i)=>{
     const d=parseYMD(m.date);
     const status=matchTentative(m.date,m.time,m.home)?'協調中':'確定';
-    rows.push([i+1, fmtDate(m.date), DOW[d.getDay()], m.time, teamName(m.home), teamName(m.away), status]);
+    const wno=wkMap[ymd(mondayOf(parseYMD(m.date)))]||'';
+    rows.push([i+1, wno, fmtDate(m.date), DOW[d.getDay()], m.time, teamName(m.home), teamName(m.away), status]);
   });
   const ws=XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols']=[{wch:6},{wch:13},{wch:6},{wch:8},{wch:12},{wch:12},{wch:10}];
+  ws['!cols']=[{wch:6},{wch:6},{wch:13},{wch:6},{wch:8},{wch:12},{wch:12},{wch:10}];
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'總賽程_7隊');
   XLSX.writeFile(wb,`TPBL_2026-27_賽程_${ymd(new Date())}.xlsx`);
