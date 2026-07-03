@@ -3,34 +3,39 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TPBL 賽程排程工具</title>
+<title>TPBL Schedule Maker</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{
-  --ink:#11151c;          /* 主文字 */
-  --ink-soft:#5b6573;     /* 次要文字 */
-  --line:#dde3ea;         /* 分隔線 */
-  --line-soft:#eef1f5;
-  --bg:#f6f8fa;           /* 工作區底色 */
+  --ink:#0f172a;          /* 主文字（slate-900，提高對比）*/
+  --ink-soft:#64748b;     /* 次要文字（slate-500）*/
+  --line:#e2e8f0;         /* 分隔線（slate-200）*/
+  --line-soft:#f1f5f9;    /* slate-100 */
+  --bg:#f8fafc;           /* 工作區底色（slate-50，更亮）*/
   --panel:#ffffff;        /* 面板白 */
-  --court:#c8783c;        /* 木地板橘 — 主強調色 */
-  --court-dark:#a35f2a;
-  --net:#1b2a3a;          /* 深藍灰 頂欄 */
-  --ok:#1f9d6b;
-  --warn:#d99100;
-  --warn-bg:#fff7e3;
-  --bad:#d5453f;
-  --bad-bg:#fdecec;
-  --lock:#9aa4b1;
-  --lock-bg:#f0f2f5;
-  --radius:10px;
-  --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08);
+  --court:#2563eb;        /* 主互動色 — 乾淨藍（blue-600）*/
+  --court-dark:#1d4ed8;   /* hover 深藍（blue-700）*/
+  --court-soft:#eff6ff;   /* 主色淡底（blue-50）— 取代舊橘淡底 */
+  --net:#0f172a;          /* 頂欄 深 slate */
+  --ok:#16a34a;           /* green-600 */
+  --warn:#d97706;         /* amber-600 — 協調中語意 */
+  --warn-bg:#fffbeb;      /* amber-50 */
+  --bad:#dc2626;          /* red-600 */
+  --bad-bg:#fef2f2;       /* red-50 */
+  --outside:#ea8a3c;      /* 白名單外 專用橘（語意保留，不與主色混用）*/
+  --outside-bg:#fff7ed;   /* orange-50 */
+  --lock:#94a3b8;         /* slate-400 */
+  --lock-bg:#f1f5f9;      /* slate-100 */
+  --radius:12px;
+  --shadow:0 1px 2px rgba(15,23,42,.04),0 1px 3px rgba(15,23,42,.07);
+  --shadow-md:0 4px 14px -4px rgba(15,23,42,.10),0 2px 6px -2px rgba(15,23,42,.06);
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
 body{
   font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,-apple-system,sans-serif;
-  color:var(--ink);background:var(--bg);font-size:14px;line-height:1.5;
+  color:var(--ink);background:var(--bg);font-size:14px;line-height:1.55;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
 }
 button{font-family:inherit;cursor:pointer}
 input,select{font-family:inherit;font-size:14px}
@@ -90,16 +95,16 @@ input,select{font-family:inherit;font-size:14px}
 .view{display:none}
 .view.active{display:block}
 
-.section-head{display:flex;align-items:center;gap:12px;margin:4px 0 16px}
-.section-head h2{font-size:17px;margin:0;font-weight:700}
+.section-head{display:flex;align-items:center;gap:12px;margin:4px 0 18px}
+.section-head h2{font-size:19px;margin:0;font-weight:700;letter-spacing:-.01em}
 .section-head p{margin:0;color:var(--ink-soft);font-size:13px}
 .section-head .spacer{flex:1}
 
 .card{
   background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
-  box-shadow:var(--shadow);padding:18px;margin-bottom:18px;
+  box-shadow:var(--shadow);padding:20px;margin-bottom:18px;
 }
-.card h3{margin:0 0 4px;font-size:14.5px;font-weight:700}
+.card h3{margin:0 0 5px;font-size:15px;font-weight:700;letter-spacing:-.01em}
 .card .hint{margin:0 0 14px;color:var(--ink-soft);font-size:12.5px}
 
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
@@ -112,7 +117,7 @@ input,select{font-family:inherit;font-size:14px}
   width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:7px;
   background:#fff;color:var(--ink);
 }
-.input:focus,select.input:focus{outline:none;border-color:var(--court);box-shadow:0 0 0 3px rgba(200,120,60,.12)}
+.input:focus,select.input:focus{outline:none;border-color:var(--court);box-shadow:0 0 0 3px rgba(37,99,235,.14)}
 .row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
 .row .field{margin-bottom:0;flex:1;min-width:120px}
 
@@ -199,7 +204,7 @@ select.scope-sel{padding:4px 6px;font-size:12px;min-width:96px;width:auto}
   min-height:54px;display:flex;flex-direction:column;gap:3px;cursor:pointer;
   transition:.12s;position:relative;
 }
-.slot:hover{border-color:var(--court);background:#fffdfb}
+.slot:hover{border-color:var(--court);background:var(--court-soft)}
 .slot .stime{font-size:10.5px;color:var(--ink-soft);font-weight:600}
 .slot.empty{justify-content:center;align-items:center}
 .slot.empty .add{color:var(--lock);font-size:18px;line-height:1}
@@ -216,7 +221,7 @@ select.scope-sel{padding:4px 6px;font-size:12px;min-width:96px;width:auto}
 }
 .slot.filled:hover .drag-handle{opacity:.8}
 /* drop 目標提示 */
-.slot.drop-ok{border-color:var(--court)!important;border-style:dashed!important;background:#fff3e6!important;border-width:2px!important}
+.slot.drop-ok{border-color:var(--court)!important;border-style:dashed!important;background:var(--court-soft)!important;border-width:2px!important}
 .slot.drop-no{border-color:var(--bad)!important;background:var(--bad-bg)!important}
 /* 空格白名單小色點 */
 .slot.empty .avail-dots{
@@ -260,7 +265,7 @@ select.scope-sel{padding:4px 6px;font-size:12px;min-width:96px;width:auto}
   display:flex;align-items:center;justify-content:center;overflow:hidden;
   background:#fff;cursor:pointer;transition:.15s;
 }
-.team-logo-cell .ll:hover{border-color:var(--court);background:#fffdfb}
+.team-logo-cell .ll:hover{border-color:var(--court);background:var(--court-soft)}
 .team-logo-cell .ll img{width:100%;height:100%;object-fit:contain}
 .team-logo-cell .ll .ph{font-size:9px;color:var(--lock);text-align:center;line-height:1.2;font-weight:600}
 .team-logo-cell .clr{
@@ -305,7 +310,7 @@ select.scope-sel{padding:4px 6px;font-size:12px;min-width:96px;width:auto}
   padding:3px 11px;font-size:11.5px;font-weight:700;color:var(--court);
   margin-right:4px;white-space:nowrap;
 }
-.sb-toggle:hover{background:#fff8f2;border-color:var(--court)}
+.sb-toggle:hover{background:var(--court-soft);border-color:var(--court)}
 .sb-team.detail{padding:3px 11px}
 .sb-team .sct2{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
 .sb-team .sct2 .seg{white-space:nowrap}
@@ -353,7 +358,7 @@ select.scope-sel{padding:4px 6px;font-size:12px;min-width:96px;width:auto}
 .pv-side .pl{width:20px;height:20px;object-fit:contain;border-radius:4px;flex-shrink:0}
 .pv-side .pc{width:12px;height:12px;border-radius:3px;flex-shrink:0}
 .pv-side .ptag{font-size:9.5px;font-weight:700;padding:1px 5px;border-radius:4px}
-.pv-side .ptag.home{color:var(--court);background:#fbeee2}
+.pv-side .ptag.home{color:var(--court);background:var(--court-soft)}
 .pv-side .ptag.away{color:var(--ink-soft);background:var(--line-soft)}
 .pv-vs{color:var(--lock);font-size:11px;font-weight:700;letter-spacing:1px}
 .pv-venue{flex:0 0 auto;color:var(--ink-soft);font-size:12px;max-width:170px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -384,7 +389,7 @@ select.scope-sel{padding:4px 6px;font-size:12px;min-width:96px;width:auto}
   display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer;
   position:relative;transition:.1s;user-select:none;
 }
-.vcal-cell:hover:not(.vc-out):not(.vc-off){border-color:var(--court);background:#fffdfb}
+.vcal-cell:hover:not(.vc-out):not(.vc-off){border-color:var(--court);background:var(--court-soft)}
 .vcal-cell.vc-out{visibility:hidden}            /* 非當月 */
 .vcal-cell.vc-off{color:var(--lock);background:var(--lock-bg);cursor:not-allowed;border-style:dashed} /* 賽季外 */
 .vcal-cell.vc-sel{background:var(--court);border-color:var(--court);color:#fff;font-weight:700}
@@ -496,15 +501,15 @@ body:not(.tab-schedule) .matrix-fab{display:none}
   border-radius:8px;background:#fff;font-size:13.5px;font-weight:600;transition:.12s;text-align:left;
 }
 .tp-btn:hover:not(:disabled){border-color:var(--court)}
-.tp-btn.sel{border-color:var(--court);background:#fff8f2}
+.tp-btn.sel{border-color:var(--court);background:var(--court-soft)}
 .tp-btn .c{width:12px;height:12px;border-radius:4px;flex-shrink:0}
 .tp-btn:disabled{opacity:.38;cursor:not-allowed}
 .tp-btn .dis-reason{font-size:10px;color:var(--lock);font-weight:500;margin-left:auto}
 /* 白名單外：可選但橘色虛線框警示（球團未提供此主場日，選後補檔期） */
-.tp-btn.outside{border-color:var(--court);border-style:dashed;background:#fffaf4}
-.tp-btn.outside:hover:not(:disabled){background:#fff3e6}
-.tp-btn.outside.sel{background:#fff3e6;border-style:solid}
-.tp-btn .dis-reason.out{color:var(--court);font-weight:700}
+.tp-btn.outside{border-color:var(--outside);border-style:dashed;background:var(--outside-bg)}
+.tp-btn.outside:hover:not(:disabled){background:#ffedd5}
+.tp-btn.outside.sel{background:#ffedd5;border-style:solid}
+.tp-btn .dis-reason.out{color:var(--outside);font-weight:700}
 
 .toast{
   position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
@@ -526,7 +531,7 @@ body:not(.tab-schedule) .matrix-fab{display:none}
   border:2px dashed var(--line);border-radius:10px;padding:22px;text-align:center;
   color:var(--ink-soft);font-size:13px;transition:.15s;cursor:pointer;
 }
-.file-drop:hover{border-color:var(--court);color:var(--court);background:#fffdfb}
+.file-drop:hover{border-color:var(--court);color:var(--court);background:var(--court-soft)}
 .muted{color:var(--ink-soft)}
 .tiny{font-size:11.5px}
 code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:12px}
@@ -537,7 +542,7 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
 <div class="topbar">
   <div class="brand">
     <img class="mark-logo" src="data:image/webp;base64,UklGRvIDAABXRUJQVlA4IOYDAAAQGACdASpAAEAAPjEYiUKiIaEVCzV0IAMEoA0m2N/gGqycw/Ir8Vehe46Iic4DlK/0z92e4Y8iXrK/QA8tT2QP73/w/TKuYH4c+Zfhk7l+sf7X6Ar6s/Xfxv0wX+If0L8mfykzmj5l/b/y31hf8i/rn5SbI7/Tf8T+WPu7f0X3Ae0f8h/s3+w+2T7BP4x/N/81wOP7bnilm60ncarTsXFTltJJZt/bJrw28Y4OswuxrmHW3BPeofFlF4IDRcvTa+fBJY2VaPlAqgAA/v2VVerPXqmtU/1N+OubZvWAM7H3yMlj//z8WqG3wfAdQ8/tMHr2BVOcUZcHkGL2XPcA3OlQRO3TT//HUxa//0n/Pmv/6/OvWHY5i3/ACpYf0F8HzGw8wMCyiljSA/gK2AtBKOt/FfxfBgBFrB7o0Qa/85PhNJn+fm8TIdA54pT+qCE2vcsGz5rck8KNorKskCY21T+WF9vLBA+COYbYQamHH8ZQnz/a7eOJKwVyHWmiJjhTjeo5Tt/RR2zLyDNdYdYDw99+UHafCXG/MIuzEem/Dh+Sl+FLXWeOijmXt6WZB5jS+aPLm7+yqPEaGe+x28OYqeX/QSVjzWDhcJVyxDVXch00NWT2X/8XQWpDAKd+Sz8SSiXRKl3hGXszb208eqOP4bq9z2BWQ2R/EVisXpzikmaB+hXFCq98+evKh9iHX40Bmff1psdJEq88TNpYefzAOotFZOCk2fCJBVF28DBmEUZW359UPvia2YwCko40Z3v2ZeBQHWB6waJx5Y/jNZr3aEZ2YuE/+KHfK0FMvAr87a2rcVN+KC73GyA8xMV+8F//9RgK6KySfnee6L3moDNFqJT4WUR/QHOalvBNIFvlAP+061e72iejETvc1mTwTHMwD/T0KF4oGqrOgoX/FgxkfwDjzrYXSqDV/Rc5Zjqb/+/H7c7XG1OUDyAQatmovWgAjBJINrBb/UWVx8381ItBKh5N2c8YCl/I3gN/MpBHrIM0+EowvnXDuD+RCndHOHP6x9rIjBG38fH+ia75AdY5TvpRVI4SyxD6Q13kbtwXP2JNsjtIX/0n0HINZui+UkcyzTxX/Ebvin7R//nXAvwiGGKhGtDajmotvwYPg2PqL//+6F//5cs8E2IDv+KmX3x8vh9xpny6/DuOwNf/i4Elu15f0SnfnwbRbKD/KdvgUabpo1mW0gwBkx3BtuB2mMIwGawHjFafJlDLgVur8zmzW049r5neUdC8dhc5zwDkyuSJ3gtLwdFMv/W3/i7B/dldVugxMKHq43Oky8ufffp1ZfYXQfntl03KRUAjmPKSo8U+mVokgAAAAA==" alt="TPBL">
-    <div>賽程排程<span class="sub" style="margin-left:8px">Scheduler</span></div>
+    <div>Schedule Maker</div>
   </div>
   <div class="spacer"></div>
   <span class="season-label" id="seasonLabel"></span>
