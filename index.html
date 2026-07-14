@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TPBL 賽程排程工具</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <style>
 :root{
   --ink:#11151c;          /* 主文字 */
@@ -1066,6 +1067,23 @@ function normalizeTeams(){
       t.logo=(def&&def.logo)?def.logo:'';
     }
   });
+  // 協調中檔期一律修正為「整天」（time:''）：
+  // 舊資料可能有「協調中檔期綁特定時段、但比賽被換到別時段而脫鉤」的情況，
+  // 導致匯出誤標確定。改整天後檔期涵蓋整日，判定不再受時段影響。
+  // 只動協調中；確定檔期維持原樣（可能是球團明確回報的特定時段）。
+  if(Array.isArray(state.venueAvail)){
+    state.venueAvail.forEach(v=>{ if(v.status==='tentative') v.time=''; });
+    // 去除因改整天而重複的協調中（同隊同日整天協調中只留一筆）
+    const seen=new Set();
+    state.venueAvail=state.venueAvail.filter(v=>{
+      if(v.status==='tentative' && v.time===''){
+        const key=v.teamId+'|'+v.date;
+        if(seen.has(key))return false;
+        seen.add(key);
+      }
+      return true;
+    });
+  }
 }
 
 /* ---------- 存檔者名字（記在本機，與 state 分開）---------- */
@@ -1814,22 +1832,30 @@ function confirmMatch(){
   doPlaceMatch();
 }
 // 清掉某隊在某日某時段「協調中」檔期（＝白名單外排賽自動補的那筆）
-// 只刪協調中、且時段精確吻合；確定狀態、全天、別時段的檔期不動。回傳刪除筆數。
-function cleanupAutoTentative(teamId,date,time){
+// 清除某隊某日「整天協調中」檔期（＝白名單外排賽自動補的）。
+// 改為整天後不再比對時段；但先確認該日該隊沒有「其他」主場比賽還在用這筆檔期，才刪。
+// 回傳刪除筆數。excludeKey：要排除的比賽 key（正在移除/改動的那場，不算「其他」）。
+function cleanupAutoTentative(teamId,date,excludeKey){
+  // 該隊在這天是否還有別的主場比賽（實務上一隊一天最多一場，此為保險）
+  const stillHome=Object.entries(state.matches).some(([k,v])=>
+    k!==excludeKey && v.home===teamId && k.split('|')[0]===date
+  );
+  if(stillHome)return 0;   // 還有別場主場在用這天 → 不刪
   const before=state.venueAvail.length;
   state.venueAvail=state.venueAvail.filter(v=>
-    !(v.teamId===teamId && v.date===date && v.time===time && v.status==='tentative')
+    !(v.teamId===teamId && v.date===date && v.status==='tentative')
   );
   return before-state.venueAvail.length;
 }
 // 真正把比賽寫入
 function doPlaceMatch(){
-  const {date,time}=modalCtx;
+  const {date}=modalCtx;
   // 編輯換主隊：原格若已有比賽、且主隊不同，舊主隊的協調中檔期一併清掉（避免孤兒檔期）
   const prev=state.matches[modalCtx.key];
   let cleaned=0;
   if(prev && prev.home!==modalCtx.home){
-    cleaned=cleanupAutoTentative(prev.home,date,time);
+    // 排除當前這格（即將被新比賽覆蓋），檢查舊主隊該日有無其他主場
+    cleaned=cleanupAutoTentative(prev.home,date,modalCtx.key);
   }
   state.matches[modalCtx.key]={home:modalCtx.home,away:modalCtx.away};
   closeModal();renderAll();
@@ -1846,11 +1872,13 @@ function openAvailConfirm(){
 function closeAvailConfirm(){document.getElementById('availConfirm').classList.remove('show')}
 // 使用者在 box 選了狀態 → 補檔期 + 排入
 function confirmAvail(status){   // status: 'confirmed' | 'tentative'
-  const {date,time}=modalCtx;
+  const {date}=modalCtx;
   const teamId=modalCtx.home;
-  // 反向補一筆該隊該日該時段的可用檔期（去重）
-  if(!state.venueAvail.some(v=>v.teamId===teamId&&v.date===date&&v.time===time)){
-    state.venueAvail.push({teamId,date,time,status});
+  // 補一筆「整天」可用檔期（time:''＝全天）。
+  // 用整天而非特定時段：球團回報的可用日本就是整天，且比賽日後在同一天內換時段時，
+  // 檔期仍涵蓋（不會脫鉤），判定協調中/連帶刪都以「整天」為準，避免時段對不上的問題。
+  if(!state.venueAvail.some(v=>v.teamId===teamId&&v.date===date&&v.time==='')){
+    state.venueAvail.push({teamId,date,time:'',status});
   }
   closeAvailConfirm();
   doPlaceMatch();
@@ -1860,9 +1888,10 @@ function removeMatch(){
   const key=modalCtx.key;
   const m=state.matches[key];
   if(m){
-    const [date,time]=key.split('|');
-    // 移除比賽時，連帶刪除主隊在該時段的協調中檔期（白名單外排賽補的）
-    const removedAvail=cleanupAutoTentative(m.home,date,time);
+    const date=key.split('|')[0];
+    // 移除比賽時，連帶刪除主隊在該日的整天協調中檔期（白名單外排賽補的）
+    // 排除當前 key：確認該隊該日沒有「其他」主場還在用這筆檔期才刪
+    const removedAvail=cleanupAutoTentative(m.home,date,key);
     delete state.matches[key];
     closeModal();renderAll();
     toast(removedAvail>0?'已移除比賽，並刪除對應的協調中檔期':'已移除');
@@ -2495,24 +2524,58 @@ function onLoadFile(e){
   reader.readAsText(file);e.target.value='';
 }
 
-/* ---------- 匯出 Excel（總賽程格式） ---------- */
-function exportExcel(){
-  const rows=[['2026-27 TPBL SCHEDULE'],[],['場次','週次','日期','星期','時間','主場','客場','狀態']];
+/* ---------- 匯出 Excel（總賽程格式；ExcelJS，主客場欄填球隊主色）----------
+   注意：匯出用 ExcelJS（支援儲存格底色）；球團檔期上傳解析與模板下載仍用 SheetJS，兩者並存 */
+// '#c0392b' → 'FFC0392B'（ExcelJS 的 ARGB）
+function hexToARGB(hex){
+  const h=(hex||'#cccccc').replace('#','').padEnd(6,'0').slice(0,6);
+  return 'FF'+h.toUpperCase();
+}
+// 依亮度判定底色深淺（深底配白字、淺底配黑字）
+function isDarkColor(hex){
+  const h=(hex||'#cccccc').replace('#','');
+  const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);
+  return (0.299*r+0.587*g+0.114*b)<150;
+}
+async function exportExcel(){
+  const wb=new ExcelJS.Workbook();
+  const ws=wb.addWorksheet('總賽程_7隊');
+  ws.columns=[{width:6},{width:6},{width:13},{width:6},{width:8},{width:12},{width:12},{width:10}];
+  ws.addRow(['2026-27 TPBL SCHEDULE']);
+  ws.addRow([]);
+  const head=ws.addRow(['場次','週次','日期','星期','時間','主場','客場','狀態']);
+  head.font={bold:true};
+
   const wkMap=weekNoMap();   // 定義 B：只有排了比賽的週才編號、接續
   const ms=Object.entries(state.matches).map(([k,v])=>{
     const[date,time]=k.split('|');return{date,time,...v};
   }).sort((a,b)=> a.date===b.date? a.time.localeCompare(b.time):a.date.localeCompare(b.date));
+
+  // 填隊色：儲存格底色＝該隊主色，字色依亮度自動配白/黑
+  const paint=(cell,teamId)=>{
+    if(teamId==='TBD')return;                      // 待訂不上色
+    const t=team(teamId); if(!t||!t.color)return;
+    cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:hexToARGB(t.color)}};
+    cell.font={color:{argb:isDarkColor(t.color)?'FFFFFFFF':'FF000000'},bold:true};
+  };
   ms.forEach((m,i)=>{
     const d=parseYMD(m.date);
     const status=matchTentative(m.date,m.time,m.home)?'協調中':'確定';
     const wno=wkMap[ymd(mondayOf(parseYMD(m.date)))]||'';
-    rows.push([i+1, wno, fmtDate(m.date), DOW[d.getDay()], m.time, teamName(m.home), teamName(m.away), status]);
+    const row=ws.addRow([i+1, wno, fmtDate(m.date), DOW[d.getDay()], m.time, teamName(m.home), teamName(m.away), status]);
+    paint(row.getCell(6), m.home);   // 主場欄
+    paint(row.getCell(7), m.away);   // 客場欄
   });
-  const ws=XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols']=[{wch:6},{wch:6},{wch:13},{wch:6},{wch:8},{wch:12},{wch:12},{wch:10}];
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,'總賽程_7隊');
-  XLSX.writeFile(wb,`TPBL_2026-27_賽程_${ymd(new Date())}.xlsx`);
+
+  const buf=await wb.xlsx.writeBuffer();
+  const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`TPBL_2026-27_賽程_${ymd(new Date())}.xlsx`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
   toast(`已匯出 ${ms.length} 場比賽`);
 }
 function doExport(){
