@@ -451,6 +451,29 @@ body:not(.tab-schedule) .matrix-fab{display:none}
 .fair-legend .fk-hi{background:#fdecec;border:1px solid #f1b9b6}
 .fair-legend .fk-lo{background:#eaf4fb;border:1px solid #bcd6ea}
 
+/* ---------- 季中群聚分析 ---------- */
+.mid-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.mid-h4{margin:18px 0 8px;font-size:13px;font-weight:700;color:var(--ink)}
+.mid-h4:first-of-type{margin-top:6px}
+.mid-tbl th{background:#f7f9fb;text-align:center;font-size:12px;white-space:nowrap}
+.mid-tbl th .mth{font-size:10px;color:var(--ink-soft);font-weight:600;margin-top:2px}
+.mid-tbl td{text-align:center;font-variant-numeric:tabular-nums}
+.mid-tbl td.midrowh{text-align:left;font-weight:600;white-space:nowrap}
+.mid-tbl td.middiag{background:#f2f4f7}
+.mid-cell{font-weight:600}
+.mid-cell.mid-bunch{background:#fdecec;color:var(--bad);font-weight:800}
+.mid-cell.mid-lean{background:#fff5e6;color:var(--warn);font-weight:700}
+.mid-list{text-align:left!important;line-height:2}
+.mid-chip{display:inline-flex;align-items:center;gap:3px;background:#f1f4f8;border:1px solid var(--line-soft);
+  border-radius:11px;padding:1px 7px 1px 6px;font-size:11px;margin:1px 4px 1px 0;white-space:nowrap;vertical-align:2px}
+.mid-chip .mc-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.mid-chip .mc-no{color:var(--lock);font-size:9.5px;margin-left:1px}
+.mid-n{color:var(--ink-soft);font-size:11px;font-weight:700;margin-left:5px}
+.mid-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:var(--ink-soft);align-items:center}
+.mid-legend .mk{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:3px}
+.mid-legend .mk-bunch{background:#fdecec;border:1px solid #f1b9b6}
+.mid-legend .mk-lean{background:#fff5e6;border:1px solid #f0d9a8}
+
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
 .stat{
   border:1px solid var(--line);border-radius:9px;padding:13px 15px;background:#fff;
@@ -628,6 +651,21 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
       <p class="hint">假日（週六日）通常票房較好、平日（週一～週五）客場移動負擔不同，這裡列出每隊在平日與假日各排了幾場主／客場，以及整季「一週三戰」發生次數，方便檢視分配是否平均。<b>同一欄中最高與最低相差較大者會標色</b>，僅供你判斷，工具不替你定義公平。</p>
       <div style="overflow-x:auto" id="fairnessWrap"></div>
     </div>
+    <div class="card">
+      <h3>📊 季中群聚分析（主場對戰分佈）</h3>
+      <p class="hint">設定一個「季中日期」把賽季切成前半／後半（日期切分；當天含之後算後半），檢查<b>各隊主場對某一對手的比賽是否擠在同一半</b>——例如主場對海神 3 場全排在前半，賣點提早用完、後段沒戲。各隊前後半主場<b>總數</b>本來就不會剛好一半一半（受場館檔期影響），那是雜訊；真正要抓的是單一對手 <b>3-0／0-3</b> 的集中。此表只計已排比賽，不含待訂(TBD)。</p>
+      <div class="mid-toolbar">
+        <label style="font-size:12.5px;color:var(--ink-soft);font-weight:600">季中日期</label>
+        <input type="date" id="midDateInput" class="input" style="width:auto" onchange="setMidDate(this.value)">
+        <button class="btn sm" onclick="setMidDate('')">重設為賽季中點</button>
+        <span class="tiny muted" id="midInfo"></span>
+      </div>
+      <h4 class="mid-h4">各隊主場群聚矩陣（前半 / 後半）</h4>
+      <div style="overflow-x:auto" id="midHomeWrap"></div>
+      <h4 class="mid-h4">對戰組合前後半分佈</h4>
+      <div style="overflow-x:auto" id="midPairWrap"></div>
+    </div>
+
     <div class="card">
       <h3>衝突與提醒 <span id="issueCount" class="muted tiny"></span></h3>
       <div id="issueList"></div>
@@ -924,7 +962,7 @@ let editingTeam = null;    // 正在行內編輯的隊伍 id
 function blankState(){
   return {
     teams: DEFAULT_TEAMS.map(t=>({...t})),  // 每隊含 logo（base64 字串，空＝用顏色）
-    season: {start:'2026-10-03', end:'2027-06-30'},
+    season: {start:'2026-10-03', end:'2027-06-30', midDate:''},  // midDate 空＝畫面自動帶賽季中點
     slots: DEFAULT_SLOTS.map(s=>({...s})),
     homeRounds: 3,         // 每隊在主場對每個對手的對戰次數（主場輪數）
     leagueBlackouts: [],   // {id,start,end,reason}
@@ -1982,6 +2020,9 @@ function renderOverview(){
   // 公平性檢視表（平日/假日主客 + 一週三戰次數，落差大的標色）
   renderFairness();
 
+  // 季中群聚分析（前半/後半 主場對戰分佈）
+  renderMidSeason();
+
   // 衝突清單
   const {issues}=checkConflicts();
   const badN=issues.filter(i=>i.level==='bad').length;
@@ -2073,6 +2114,114 @@ function renderFairness(){
   </div>`;
   wrap.innerHTML=html;
 }
+/* ---------- 季中群聚分析 ---------- */
+// 賽季行事曆中點（前後半日期切分的預設值）
+function defaultMidDate(){
+  if(!state.season.start||!state.season.end)return '';
+  const s=parseYMD(state.season.start),e=parseYMD(state.season.end);
+  return ymd(new Date((s.getTime()+e.getTime())/2));
+}
+// 使用者調整季中日期（空字串＝回到賽季中點）
+function setMidDate(v){
+  state.season.midDate=v||'';
+  autoSave();
+  renderMidSeason();
+}
+function renderMidSeason(){
+  const homeWrap=document.getElementById('midHomeWrap');
+  const pairWrap=document.getElementById('midPairWrap');
+  if(!homeWrap||!pairWrap)return;
+  const inp=document.getElementById('midDateInput');
+  const info=document.getElementById('midInfo');
+
+  const mid=state.season.midDate||defaultMidDate();
+  if(inp)inp.value=mid;
+  if(!mid){
+    homeWrap.innerHTML='<p class="muted" style="padding:8px">請先在「隊伍與賽季」設定完整賽季區間。</p>';
+    pairWrap.innerHTML='';if(info)info.textContent='';return;
+  }
+  const midT=parseYMD(mid).getTime();
+  const isPre=(dateStr)=> parseYMD(dateStr).getTime()<midT;   // <中點=前半；當天含之後=後半
+
+  const all=sortedMatches().filter(m=>m.away!=='TBD');        // 只算已定對戰（排除待訂）
+  if(all.length===0){
+    homeWrap.innerHTML='<p class="muted" style="padding:8px">目前尚無已排比賽（或皆為待訂）。</p>';
+    pairWrap.innerHTML='';if(info)info.textContent='';return;
+  }
+
+  const teams=state.teams;
+  const idx={};teams.forEach((t,i)=>idx[t.id]=i);
+  const R=homeRounds();                                       // 每組主場場數（預設 3）
+
+  // 表2：主隊 × 對手 → {pre,post}（有主客之分）
+  const hsplit={};
+  teams.forEach(h=>{hsplit[h.id]={};teams.forEach(a=>{if(a.id!==h.id)hsplit[h.id][a.id]={pre:0,post:0}})});
+  // 表1：無向配對（i<j）→ {pre:[],post:[]}，元素含場次、日期、主隊
+  const psplit={};
+  const pkey=(a,b)=>{const i=idx[a],j=idx[b];return i<j?`${i}-${j}`:`${j}-${i}`};
+
+  let preN=0,postN=0;
+  all.forEach(m=>{
+    const pre=isPre(m.date);pre?preN++:postN++;
+    if(hsplit[m.home]&&hsplit[m.home][m.away])hsplit[m.home][m.away][pre?'pre':'post']++;
+    const k=pkey(m.home,m.away);
+    (psplit[k]=psplit[k]||{pre:[],post:[]})[pre?'pre':'post'].push({no:m.gameNo,date:m.date,home:m.home});
+  });
+  if(info)info.textContent=`前半 ${preN} 場 ／ 後半 ${postN} 場（切點：${fmtDate(mid)}）`;
+
+  // ===== 表2：每隊主場群聚矩陣 =====
+  let h2=`<table class="tbl mid-tbl"><tr><th>主隊＼對手</th>`;
+  teams.forEach(a=>h2+=`<th><div style="display:flex;flex-direction:column;align-items:center;gap:2px">${teamMark(a,15,'mlogo')}<span class="mth">${a.name}</span></div></th>`);
+  h2+=`</tr>`;
+  teams.forEach(h=>{
+    h2+=`<tr><td class="midrowh"><span style="display:inline-flex;align-items:center;gap:6px">${teamMark(h,16,'mlogo')}${h.name}</span></td>`;
+    teams.forEach(a=>{
+      if(a.id===h.id){h2+=`<td class="middiag"></td>`;return;}
+      const c=hsplit[h.id][a.id];const tot=c.pre+c.post;
+      let cls='mid-cell';
+      if(tot>0&&(c.pre===0||c.post===0)){
+        cls+=(tot>=R)?' mid-bunch':(tot>=2?' mid-lean':'');   // 全滿且單邊0=紅；未滿但已偏一邊=橘
+      }
+      h2+=`<td class="${cls}">${tot?`${c.pre}/${c.post}`:'<span class="muted">–</span>'}</td>`;
+    });
+    h2+=`</tr>`;
+  });
+  h2+=`</table>
+    <div class="mid-legend">
+      <span>每格＝該主隊對該對手的主場比賽「前半/後半」場數</span>
+      <span><span class="mk mk-bunch"></span> ${R}-0／0-${R} 全擠一半</span>
+      <span><span class="mk mk-lean"></span> 已排且偏向一半（尚未排滿 ${R} 場）</span>
+    </div>`;
+  homeWrap.innerHTML=h2;
+
+  // ===== 表1：對戰組合前後半分佈（無向，含日期與場次）=====
+  const chip=(e)=>{
+    const d=parseYMD(e.date);const t=team(e.home);
+    return `<span class="mid-chip" title="${teamName(e.home)} 主場"><span class="mc-dot" style="background:${t?t.color:'#ccc'}"></span>${d.getMonth()+1}/${d.getDate()}<span class="mc-no">#${e.no}</span></span>`;
+  };
+  const byNo=arr=>arr.slice().sort((x,y)=>x.no-y.no);
+  let h1=`<table class="tbl mid-tbl">
+    <tr><th style="text-align:left">對戰組合</th>
+      <th style="text-align:left">前半（&lt; ${fmtDate(mid)}）</th>
+      <th style="text-align:left">後半（≥ ${fmtDate(mid)}）</th></tr>`;
+  for(let i=0;i<teams.length;i++)for(let j=i+1;j<teams.length;j++){
+    const k=`${i}-${j}`;const c=psplit[k]||{pre:[],post:[]};
+    const a=teams[i],b=teams[j];
+    const preH=c.pre.length?byNo(c.pre).map(chip).join(''):'<span class="muted">–</span>';
+    const postH=c.post.length?byNo(c.post).map(chip).join(''):'<span class="muted">–</span>';
+    h1+=`<tr>
+      <td class="midrowh"><span style="display:inline-flex;align-items:center;gap:4px">${teamMark(a,14,'mlogo')}${a.name}<span class="muted" style="margin:0 2px">×</span>${teamMark(b,14,'mlogo')}${b.name}</span></td>
+      <td class="mid-list">${preH}<span class="mid-n">(${c.pre.length})</span></td>
+      <td class="mid-list">${postH}<span class="mid-n">(${c.post.length})</span></td>
+    </tr>`;
+  }
+  h1+=`</table>
+    <div class="mid-legend">
+      <span>色點＝該場主場隊；#數字＝該場在總表的場次號</span>
+    </div>`;
+  pairWrap.innerHTML=h1;
+}
+
 function jumpTo(wk){
   switchTab('schedule');
   setTimeout(()=>{
@@ -2537,19 +2686,25 @@ function isDarkColor(hex){
   const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);
   return (0.299*r+0.587*g+0.114*b)<150;
 }
-async function exportExcel(){
-  const wb=new ExcelJS.Workbook();
-  const ws=wb.addWorksheet('總賽程_7隊');
-  ws.columns=[{width:6},{width:6},{width:13},{width:6},{width:8},{width:12},{width:12},{width:10}];
-  ws.addRow(['2026-27 TPBL SCHEDULE']);
-  ws.addRow([]);
-  const head=ws.addRow(['場次','週次','日期','星期','時間','主場','客場','狀態']);
-  head.font={bold:true};
-
-  const wkMap=weekNoMap();   // 定義 B：只有排了比賽的週才編號、接續
-  const ms=Object.entries(state.matches).map(([k,v])=>{
+/* 依日期→時間排序的所有比賽，並標上全域場次號（gameNo：1..N）。
+   匯出 Excel 與「季中群聚分析」共用，確保兩處看到的場次號完全一致。 */
+function sortedMatches(){
+  const arr=Object.entries(state.matches).map(([k,v])=>{
     const[date,time]=k.split('|');return{date,time,...v};
   }).sort((a,b)=> a.date===b.date? a.time.localeCompare(b.time):a.date.localeCompare(b.date));
+  arr.forEach((m,i)=>m.gameNo=i+1);
+  return arr;
+}
+
+async function exportExcel(){
+  const wb=new ExcelJS.Workbook();
+  const all=sortedMatches();
+  const wkMap=weekNoMap();   // 定義 B：只有排了比賽的週才編號、接續
+
+  const COLW=[6,6,13,6,8,13,13,10];
+  const HEAD=['場次','週次','日期','星期','時間','主場','客場','狀態'];
+  const thin={style:'thin',color:{argb:'FFBFC7D0'}};
+  const bd={top:thin,left:thin,bottom:thin,right:thin};      // 四邊細格線
 
   // 填隊色：儲存格底色＝該隊主色，字色依亮度自動配白/黑
   const paint=(cell,teamId)=>{
@@ -2558,13 +2713,50 @@ async function exportExcel(){
     cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:hexToARGB(t.color)}};
     cell.font={color:{argb:isDarkColor(t.color)?'FFFFFFFF':'FF000000'},bold:true};
   };
-  ms.forEach((m,i)=>{
+  const rowArr=(m)=>{
     const d=parseYMD(m.date);
     const status=matchTentative(m.date,m.time,m.home)?'協調中':'確定';
-    const wno=wkMap[ymd(mondayOf(parseYMD(m.date)))]||'';
-    const row=ws.addRow([i+1, wno, fmtDate(m.date), DOW[d.getDay()], m.time, teamName(m.home), teamName(m.away), status]);
-    paint(row.getCell(6), m.home);   // 主場欄
-    paint(row.getCell(7), m.away);   // 客場欄
+    const wno=wkMap[ymd(mondayOf(d))]||'';
+    return [m.gameNo, wno, fmtDate(m.date), DOW[d.getDay()], m.time, teamName(m.home), teamName(m.away), status];
+  };
+  // 在工作表寫一個區塊：可選小標題 + 表頭 + 資料列（含格線與主客場上色）
+  const writeBlock=(ws,title,rows)=>{
+    if(title){const tr=ws.addRow([title]);tr.getCell(1).font={bold:true,size:12};}
+    const hd=ws.addRow(HEAD);
+    hd.eachCell(c=>{
+      c.font={bold:true};c.border=bd;
+      c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFEDF0F4'}};
+      c.alignment={horizontal:'center'};
+    });
+    rows.forEach(m=>{
+      const r=ws.addRow(rowArr(m));
+      r.eachCell(c=>c.border=bd);        // 每格都畫格線
+      paint(r.getCell(6),m.home);        // 主場欄上色
+      paint(r.getCell(7),m.away);        // 客場欄上色
+    });
+    ws.addRow([]);                       // 區塊之間空一列
+  };
+  const setCols=(ws)=>{ws.columns=COLW.map(w=>({width:w}));};
+
+  // === 分頁 1：總賽程（全部場次）===
+  const ws0=wb.addWorksheet('總賽程_7隊',{views:[{state:'frozen',ySplit:3}]});
+  setCols(ws0);
+  const t0=ws0.addRow(['2026-27 TPBL 總賽程']);t0.getCell(1).font={bold:true,size:14};
+  ws0.addRow([]);
+  writeBlock(ws0,'',all);
+
+  // === 分頁 2–8：每隊一頁（完整總表 + 該隊主場 + 該隊全部賽事）===
+  // 每頁自成一體，可整頁交給該球團；三塊皆依場次排序，共用同一套格線與隊色
+  state.teams.forEach(t=>{
+    const homeRows=all.filter(m=>m.home===t.id);                     // 主場 18
+    const allRows =all.filter(m=>m.home===t.id||m.away===t.id);      // 全部 36
+    const ws=wb.addWorksheet(t.name.slice(0,28),{properties:{tabColor:{argb:hexToARGB(t.color)}}});
+    setCols(ws);
+    const th=ws.addRow([`${t.name} — 賽程分頁`]);th.getCell(1).font={bold:true,size:14};
+    ws.addRow([]);
+    writeBlock(ws,`① 完整總賽程（全 ${all.length} 場）`,all);
+    writeBlock(ws,`② ${t.name} 主場（${homeRows.length} 場）`,homeRows);
+    writeBlock(ws,`③ ${t.name} 全部賽事（${allRows.length} 場）`,allRows);
   });
 
   const buf=await wb.xlsx.writeBuffer();
@@ -2576,7 +2768,7 @@ async function exportExcel(){
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(a.href);
-  toast(`已匯出 ${ms.length} 場比賽`);
+  toast(`已匯出：總表 + ${state.teams.length} 隊分頁，共 ${all.length} 場`);
 }
 function doExport(){
   if(Object.keys(state.matches).length===0){toast('尚無比賽可匯出',true);return}
