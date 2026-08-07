@@ -446,6 +446,9 @@ body:not(.tab-schedule) .matrix-fab{display:none}
 .fair-tbl td.fnum{text-align:center;font-weight:600;font-variant-numeric:tabular-nums}
 .fair-tbl td.fnum.fair-hi{background:#fdecec;color:var(--bad);font-weight:800}
 .fair-tbl td.fnum.fair-lo{background:#eaf4fb;color:#2e5589;font-weight:800}
+.fair-tbl td.fnum-wend{background:#fbfcfd}
+.fair-tbl td.fnum-wend.fair-hi{background:#fdecec}
+.fair-tbl td.fnum-wend.fair-lo{background:#eaf4fb}
 .fair-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--ink-soft);align-items:center}
 .fair-legend .fk{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:3px}
 .fair-legend .fk-hi{background:#fdecec;border:1px solid #f1b9b6}
@@ -583,6 +586,7 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
   <button class="tab active" data-tab="schedule" onclick="switchTab('schedule')">排程</button>
   <button class="tab" data-tab="preview" onclick="switchTab('preview')">賽程預覽</button>
   <button class="tab" data-tab="overview" onclick="switchTab('overview')">進度總覽 <span class="badge" id="issueBadge" style="display:none">0</span></button>
+  <button class="tab" data-tab="analysis" onclick="switchTab('analysis')">賽程分析</button>
   <button class="tab" data-tab="setup" onclick="switchTab('setup')">隊伍與賽季</button>
   <button class="tab" data-tab="blackout" onclick="switchTab('blackout')">禁排與場館</button>
 </div>
@@ -647,12 +651,26 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
       </div>
     </div>
     <div class="card">
-      <h3>⚖ 公平性檢視（平日／假日 主客場分配）</h3>
-      <p class="hint">假日（週六日）通常票房較好、平日（週一～週五）客場移動負擔不同，這裡列出每隊在平日與假日各排了幾場主／客場，以及整季「一週三戰」發生次數，方便檢視分配是否平均。<b>同一欄中最高與最低相差較大者會標色</b>，僅供你判斷，工具不替你定義公平。</p>
+      <h3>衝突與提醒 <span id="issueCount" class="muted tiny"></span></h3>
+      <div id="issueList"></div>
+    </div>
+    <div class="card">
+      <h3>🤝 協調中的比賽 <span id="tentCount" class="muted tiny"></span></h3>
+      <p class="hint">這些比賽排在尚未確定的「協調中」檔期上，待球團確認後，記得到「禁排與場館」把對應檔期切回「確定」。</p>
+      <div id="tentList"></div>
+    </div>
+  </div>
+
+  <!-- ============ 賽程分析 ============ -->
+  <div class="view" id="view-analysis">
+    <div class="section-head"><h2>賽程分析</h2><p>公平性檢視（各出賽日主客分配）與對戰分布（季中前後半群聚）</p></div>
+    <div class="card">
+      <h3>⚖ 公平性檢視</h3>
+      <p class="hint">TPBL 賽事集中在<b>週三、五、六、日</b>四個出賽日，各日票房與客場移動負擔不同。這裡列出每隊在各出賽日各排了幾場主／客場，以及整季「一週三戰」發生次數，方便檢視分配是否平均。<b>同一欄中最高與最低相差較大者會標色</b>，僅供你判斷，工具不替你定義公平。</p>
       <div style="overflow-x:auto" id="fairnessWrap"></div>
     </div>
     <div class="card">
-      <h3>📊 季中群聚分析（主場對戰分佈）</h3>
+      <h3>📊 對戰分布（季中前後半群聚）</h3>
       <p class="hint">設定一個「季中日期」把賽季切成前半／後半（日期切分；當天含之後算後半），檢查<b>各隊主場對某一對手的比賽是否擠在同一半</b>——例如主場對海神 3 場全排在前半，賣點提早用完、後段沒戲。各隊前後半主場<b>總數</b>本來就不會剛好一半一半（受場館檔期影響），那是雜訊；真正要抓的是單一對手 <b>3-0／0-3</b> 的集中。此表只計已排比賽，不含待訂(TBD)。</p>
       <div class="mid-toolbar">
         <label style="font-size:12.5px;color:var(--ink-soft);font-weight:600">季中日期</label>
@@ -664,16 +682,6 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
       <div style="overflow-x:auto" id="midHomeWrap"></div>
       <h4 class="mid-h4">對戰組合前後半分佈</h4>
       <div style="overflow-x:auto" id="midPairWrap"></div>
-    </div>
-
-    <div class="card">
-      <h3>衝突與提醒 <span id="issueCount" class="muted tiny"></span></h3>
-      <div id="issueList"></div>
-    </div>
-    <div class="card">
-      <h3>🤝 協調中的比賽 <span id="tentCount" class="muted tiny"></span></h3>
-      <p class="hint">這些比賽排在尚未確定的「協調中」檔期上，待球團確認後，記得到「禁排與場館」把對應檔期切回「確定」。</p>
-      <div id="tentList"></div>
     </div>
   </div>
 
@@ -1372,8 +1380,14 @@ function switchTab(t){
   if(t==='schedule')renderSchedule();
   if(t==='preview')renderPreview();
   if(t==='overview')renderOverview();
+  if(t==='analysis')renderAnalysis();
   if(t==='setup')renderSetup();
   if(t==='blackout')renderBlackout();
+}
+/* 賽程分析頁：公平性檢視 + 對戰分布 */
+function renderAnalysis(){
+  renderFairness();
+  renderMidSeason();
 }
 
 function renderAll(){
@@ -1513,14 +1527,19 @@ function renderSchedule(){
 function isWeekend(dateStr){const wd=parseYMD(dateStr).getDay();return wd===0||wd===6}
 function teamStats(){
   const st={};
-  state.teams.forEach(t=>st[t.id]={wkHome:0,wkAway:0,wendHome:0,wendAway:0,home:0,away:0,threeIn:0});
+  // 保留 wk/wend（計分板浮動提示沿用）；新增 dNH/dNA：週N(3/5/6/0)主/客
+  state.teams.forEach(t=>st[t.id]={wkHome:0,wkAway:0,wendHome:0,wendAway:0,home:0,away:0,threeIn:0,
+    d3H:0,d3A:0,d5H:0,d5A:0,d6H:0,d6A:0,d0H:0,d0A:0});
+  const dayKey={3:'d3',5:'d5',6:'d6',0:'d0'};   // 出賽日 → 欄位前綴（其他日不計入四欄）
   const entries=Object.entries(state.matches).map(([k,v])=>{
     const[date,time]=k.split('|');return{date,time,home:v.home,away:v.away};
   });
   entries.forEach(m=>{
-    const wend=isWeekend(m.date);
-    if(st[m.home]){st[m.home].home++; wend?st[m.home].wendHome++:st[m.home].wkHome++;}
-    if(m.away!=='TBD'&&st[m.away]){st[m.away].away++; wend?st[m.away].wendAway++:st[m.away].wkAway++;}
+    const wd=parseYMD(m.date).getDay();
+    const wend=(wd===0||wd===6);
+    const dk=dayKey[wd];
+    if(st[m.home]){st[m.home].home++; wend?st[m.home].wendHome++:st[m.home].wkHome++; if(dk)st[m.home][dk+'H']++;}
+    if(m.away!=='TBD'&&st[m.away]){st[m.away].away++; wend?st[m.away].wendAway++:st[m.away].wkAway++; if(dk)st[m.away][dk+'A']++;}
   });
   // 一週三戰次數：依週統計每隊出賽場數，≥3 即該週計一次
   const byWeek={};
@@ -2017,12 +2036,6 @@ function renderOverview(){
   tc+=`</table>`;
   document.getElementById('teamCountWrap').innerHTML=tc;
 
-  // 公平性檢視表（平日/假日主客 + 一週三戰次數，落差大的標色）
-  renderFairness();
-
-  // 季中群聚分析（前半/後半 主場對戰分佈）
-  renderMidSeason();
-
   // 衝突清單
   const {issues}=checkConflicts();
   const badN=issues.filter(i=>i.level==='bad').length;
@@ -2065,13 +2078,13 @@ function renderOverview(){
   }
 }
 
-/* ---------- 公平性檢視表 ---------- */
+/* ---------- 公平性檢視表（各出賽日 三/五/六/日 主客分配）---------- */
 function renderFairness(){
   const wrap=document.getElementById('fairnessWrap');
   if(!wrap)return;
   const stats=teamStats();
   // 各欄位收集數值，找出最大/最小以標色（落差>=2 才標，避免小差異也亮）
-  const cols=['wkHome','wkAway','wendHome','wendAway','threeIn'];
+  const cols=['d3H','d3A','d5H','d5A','d6H','d6A','d0H','d0A','threeIn'];
   const colMax={},colMin={};
   cols.forEach(c=>{
     const vals=state.teams.map(t=>stats[t.id][c]);
@@ -2080,34 +2093,44 @@ function renderFairness(){
   // 是否有任何已排比賽（全 0 時不標色）
   const anyMatch=Object.keys(state.matches).length>0;
 
-  function cell(c,v){
-    let cls='';
+  function cell(c,v,wend){
+    let cls=wend?' fnum-wend':'';
     if(anyMatch && colMax[c]-colMin[c]>=2){
-      if(v===colMax[c])cls=' fair-hi';        // 該欄最多
-      else if(v===colMin[c])cls=' fair-lo';   // 該欄最少
+      if(v===colMax[c])cls+=' fair-hi';        // 該欄最多
+      else if(v===colMin[c])cls+=' fair-lo';   // 該欄最少
     }
     return `<td class="fnum${cls}">${v}</td>`;
   }
   let html=`<table class="tbl fair-tbl">
     <tr>
       <th rowspan="2">隊伍</th>
-      <th colspan="2" class="grp">平日（一～五）</th>
-      <th colspan="2" class="grp grp-wend">假日（六、日）</th>
+      <th colspan="2" class="grp">週三</th>
+      <th colspan="2" class="grp">週五</th>
+      <th colspan="2" class="grp grp-wend">週六</th>
+      <th colspan="2" class="grp grp-wend">週日</th>
       <th rowspan="2" class="fcol-3in">一週三戰次數</th>
     </tr>
-    <tr><th>主場</th><th>客場</th><th class="grp-wend">主場</th><th class="grp-wend">客場</th></tr>`;
+    <tr>
+      <th>主</th><th>客</th>
+      <th>主</th><th>客</th>
+      <th class="grp-wend">主</th><th class="grp-wend">客</th>
+      <th class="grp-wend">主</th><th class="grp-wend">客</th>
+    </tr>`;
   state.teams.forEach(t=>{
     const s=stats[t.id];
     html+=`<tr>
       <td><span style="display:inline-flex;align-items:center;gap:6px">${teamMark(t,16,'mlogo')}${t.name}</span></td>
-      ${cell('wkHome',s.wkHome)}${cell('wkAway',s.wkAway)}
-      ${cell('wendHome',s.wendHome)}${cell('wendAway',s.wendAway)}
+      ${cell('d3H',s.d3H)}${cell('d3A',s.d3A)}
+      ${cell('d5H',s.d5H)}${cell('d5A',s.d5A)}
+      ${cell('d6H',s.d6H,true)}${cell('d6A',s.d6A,true)}
+      ${cell('d0H',s.d0H,true)}${cell('d0A',s.d0A,true)}
       ${cell('threeIn',s.threeIn)}
     </tr>`;
   });
   html+=`</table>`;
   // 圖例
   html+=`<div class="fair-legend">
+    <span>主＝主場　客＝客場（週六、日為假日）</span>
     <span><span class="fk fk-hi"></span> 該欄最多</span>
     <span><span class="fk fk-lo"></span> 該欄最少</span>
     <span class="muted">（同欄最多與最少相差 ≥2 才標示）</span>
