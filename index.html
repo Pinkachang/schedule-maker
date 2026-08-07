@@ -439,6 +439,8 @@ body:not(.tab-schedule) .matrix-fab{display:none}
 .mp-three-item.has b{color:var(--warn)}
 
 /* ---------- 公平性檢視表 ---------- */
+.fair-tbl th{text-align:center}          /* 表頭一律置中（主/客、週次群組…）*/
+.fair-tbl th.fcol-team{text-align:left}  /* 「隊伍」欄維持靠左 */
 .fair-tbl th.grp{text-align:center;border-bottom:1px solid var(--line);background:#f7f9fb}
 .fair-tbl th[rowspan]{vertical-align:middle}
 .fair-tbl th.fcol-3in{text-align:center;white-space:nowrap}
@@ -466,7 +468,7 @@ body:not(.tab-schedule) .matrix-fab{display:none}
 .mid-cell{font-weight:600}
 .mid-cell.mid-bunch{background:#fdecec;color:var(--bad);font-weight:800}
 .mid-cell.mid-lean{background:#fff5e6;color:var(--warn);font-weight:700}
-.mid-list{text-align:left!important;line-height:2}
+.mid-list{text-align:center;line-height:2}
 .mid-chip{display:inline-flex;align-items:center;gap:3px;background:#f1f4f8;border:1px solid var(--line-soft);
   border-radius:11px;padding:1px 7px 1px 6px;font-size:11px;margin:1px 4px 1px 0;white-space:nowrap;vertical-align:2px}
 .mid-chip .mc-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
@@ -573,6 +575,9 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
   <div class="spacer"></div>
   <span class="season-label" id="seasonLabel"></span>
   <span id="autoSaveHint" style="font-size:11.5px;color:#7c8a99;white-space:nowrap"></span>
+  <input id="schedTitle" placeholder="賽程表名" title="匯出 Excel 時，寫在每張工作表最上方的表格標題（例：2026-27 TPBL 總賽程 V5）"
+    style="width:190px;padding:6px 9px;border-radius:7px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#fff;font-size:12.5px"
+    oninput="setSchedTitle(this.value)">
   <input id="editorName" placeholder="你的名字" title="存檔時記錄是誰存的（記在本機）"
     style="width:84px;padding:6px 9px;border-radius:7px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#fff;font-size:12.5px"
     onchange="saveEditorName()">
@@ -663,24 +668,24 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
 
   <!-- ============ 賽程分析 ============ -->
   <div class="view" id="view-analysis">
-    <div class="section-head"><h2>賽程分析</h2><p>公平性檢視（各出賽日主客分配）與對戰分布（季中前後半群聚）</p></div>
+    <div class="section-head"><h2>賽程分析</h2><p>公平性檢視（各出賽日主客分配）與對戰分布（上下半季群聚）</p></div>
     <div class="card">
-      <h3>⚖ 公平性檢視</h3>
+      <h3>⚖️ 公平性檢視</h3>
       <p class="hint">TPBL 賽事集中在<b>週三、五、六、日</b>四個出賽日，各日票房與客場移動負擔不同。這裡列出每隊在各出賽日各排了幾場主／客場，以及整季「一週三戰」發生次數，方便檢視分配是否平均。<b>同一欄中最高與最低相差較大者會標色</b>，僅供你判斷，工具不替你定義公平。</p>
       <div style="overflow-x:auto" id="fairnessWrap"></div>
     </div>
     <div class="card">
-      <h3>📊 對戰分布（季中前後半群聚）</h3>
-      <p class="hint">設定一個「季中日期」把賽季切成前半／後半（日期切分；當天含之後算後半），檢查<b>各隊主場對某一對手的比賽是否擠在同一半</b>——例如主場對海神 3 場全排在前半，賣點提早用完、後段沒戲。各隊前後半主場<b>總數</b>本來就不會剛好一半一半（受場館檔期影響），那是雜訊；真正要抓的是單一對手 <b>3-0／0-3</b> 的集中。此表只計已排比賽，不含待訂(TBD)。</p>
+      <h3>📊 對戰分布</h3>
+      <p class="hint">設定一個「季中日期」把賽季切成上半季／下半季（日期切分；當天含之後算下半季），檢查<b>各隊主場對某一對手的比賽是否擠在同一半季</b>——例如主場對海神 3 場全排在上半季，賣點提早用完、後段沒戲。各隊上下半季主場<b>總數</b>本來就不會剛好一半一半（受場館檔期影響），那是雜訊；真正要抓的是單一對手 <b>3-0／0-3</b> 的集中。此表只計已排比賽，不含待訂(TBD)。</p>
       <div class="mid-toolbar">
         <label style="font-size:12.5px;color:var(--ink-soft);font-weight:600">季中日期</label>
         <input type="date" id="midDateInput" class="input" style="width:auto" onchange="setMidDate(this.value)">
         <button class="btn sm" onclick="setMidDate('')">重設為賽季中點</button>
         <span class="tiny muted" id="midInfo"></span>
       </div>
-      <h4 class="mid-h4">各隊主場群聚矩陣（前半 / 後半）</h4>
+      <h4 class="mid-h4">各隊主場群聚矩陣（上半季 / 下半季）</h4>
       <div style="overflow-x:auto" id="midHomeWrap"></div>
-      <h4 class="mid-h4">對戰組合前後半分佈</h4>
+      <h4 class="mid-h4">對戰組合上下半季分佈</h4>
       <div style="overflow-x:auto" id="midPairWrap"></div>
     </div>
   </div>
@@ -940,7 +945,8 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
      - teamStats()：平日/假日主客、一週三戰次數統計（計分板詳細模式與公平性表共用）
      - buildMatrixHTML()：對戰矩陣（進度總覽與排程頁浮層共用）
      - cleanupAutoTentative()：白名單外排賽補的協調中檔期，移除/換主隊時的連帶清理
-     - exportExcel()：匯出格式（含週次欄、狀態寫確定/協調中）
+     - exportExcel()：匯出格式（含週次欄、狀態寫確定/協調中；全表黑細框線＋置中，
+                      標題取自頂欄「賽程表名」state.schedTitle，跨欄置中於 A1:H1）
      - normalizeTeams() / tbScope()：載入舊資料的向後相容（undefined 補預設、'' 保留）
    =================================================================== */
 
@@ -971,6 +977,7 @@ function blankState(){
   return {
     teams: DEFAULT_TEAMS.map(t=>({...t})),  // 每隊含 logo（base64 字串，空＝用顏色）
     season: {start:'2026-10-03', end:'2027-06-30', midDate:''},  // midDate 空＝畫面自動帶賽季中點
+    schedTitle: '2026-27 TPBL 總賽程',   // 頂欄可編輯；匯出 Excel 各工作表最上方的表格標題
     slots: DEFAULT_SLOTS.map(s=>({...s})),
     homeRounds: 3,         // 每隊在主場對每個對手的對戰次數（主場輪數）
     leagueBlackouts: [],   // {id,start,end,reason}
@@ -1390,7 +1397,18 @@ function renderAnalysis(){
   renderMidSeason();
 }
 
+/* 賽程表名（頂欄輸入 → 匯出 Excel 的表格標題／檔名）*/
+function schedTitle(){
+  return (state.schedTitle||'').trim() || '2026-27 TPBL 總賽程';
+}
+function setSchedTitle(v){
+  state.schedTitle=v;
+  autoSave();
+}
+
 function renderAll(){
+  const stEl=document.getElementById('schedTitle');
+  if(stEl && stEl.value!==(state.schedTitle||''))stEl.value=state.schedTitle||'';
   document.getElementById('seasonLabel').innerHTML=
     `賽季 <b>${fmtDate(state.season.start)} – ${fmtDate(state.season.end)}</b>`;
   const {issues}=checkConflicts();
@@ -2103,7 +2121,7 @@ function renderFairness(){
   }
   let html=`<table class="tbl fair-tbl">
     <tr>
-      <th rowspan="2">隊伍</th>
+      <th rowspan="2" class="fcol-team">隊伍</th>
       <th colspan="2" class="grp">週三</th>
       <th colspan="2" class="grp">週五</th>
       <th colspan="2" class="grp grp-wend">週六</th>
@@ -2138,7 +2156,7 @@ function renderFairness(){
   wrap.innerHTML=html;
 }
 /* ---------- 季中群聚分析 ---------- */
-// 賽季行事曆中點（前後半日期切分的預設值）
+// 賽季行事曆中點（上下半季日期切分的預設值）
 function defaultMidDate(){
   if(!state.season.start||!state.season.end)return '';
   const s=parseYMD(state.season.start),e=parseYMD(state.season.end);
@@ -2164,7 +2182,7 @@ function renderMidSeason(){
     pairWrap.innerHTML='';if(info)info.textContent='';return;
   }
   const midT=parseYMD(mid).getTime();
-  const isPre=(dateStr)=> parseYMD(dateStr).getTime()<midT;   // <中點=前半；當天含之後=後半
+  const isPre=(dateStr)=> parseYMD(dateStr).getTime()<midT;   // <中點=上半季；當天含之後=下半季
 
   const all=sortedMatches().filter(m=>m.away!=='TBD');        // 只算已定對戰（排除待訂）
   if(all.length===0){
@@ -2176,7 +2194,7 @@ function renderMidSeason(){
   const idx={};teams.forEach((t,i)=>idx[t.id]=i);
   const R=homeRounds();                                       // 每組主場場數（預設 3）
 
-  // 表2：主隊 × 對手 → {pre,post}（有主客之分）
+  // 表2：主隊 × 對手 → {pre,post}（上半季/下半季；有主客之分）
   const hsplit={};
   teams.forEach(h=>{hsplit[h.id]={};teams.forEach(a=>{if(a.id!==h.id)hsplit[h.id][a.id]={pre:0,post:0}})});
   // 表1：無向配對（i<j）→ {pre:[],post:[]}，元素含場次、日期、主隊
@@ -2190,7 +2208,7 @@ function renderMidSeason(){
     const k=pkey(m.home,m.away);
     (psplit[k]=psplit[k]||{pre:[],post:[]})[pre?'pre':'post'].push({no:m.gameNo,date:m.date,home:m.home});
   });
-  if(info)info.textContent=`前半 ${preN} 場 ／ 後半 ${postN} 場（切點：${fmtDate(mid)}）`;
+  if(info)info.textContent=`上半季 ${preN} 場 ／ 下半季 ${postN} 場（切點：${fmtDate(mid)}）`;
 
   // ===== 表2：每隊主場群聚矩陣 =====
   let h2=`<table class="tbl mid-tbl"><tr><th>主隊＼對手</th>`;
@@ -2211,13 +2229,13 @@ function renderMidSeason(){
   });
   h2+=`</table>
     <div class="mid-legend">
-      <span>每格＝該主隊對該對手的主場比賽「前半/後半」場數</span>
+      <span>每格＝該主隊對該對手的主場比賽「上半季/下半季」場數</span>
       <span><span class="mk mk-bunch"></span> ${R}-0／0-${R} 全擠一半</span>
       <span><span class="mk mk-lean"></span> 已排且偏向一半（尚未排滿 ${R} 場）</span>
     </div>`;
   homeWrap.innerHTML=h2;
 
-  // ===== 表1：對戰組合前後半分佈（無向，含日期與場次）=====
+  // ===== 表1：對戰組合上下半季分佈（無向，含日期與場次）=====
   const chip=(e)=>{
     const d=parseYMD(e.date);const t=team(e.home);
     return `<span class="mid-chip" title="${teamName(e.home)} 主場"><span class="mc-dot" style="background:${t?t.color:'#ccc'}"></span>${d.getMonth()+1}/${d.getDate()}<span class="mc-no">#${e.no}</span></span>`;
@@ -2225,8 +2243,8 @@ function renderMidSeason(){
   const byNo=arr=>arr.slice().sort((x,y)=>x.no-y.no);
   let h1=`<table class="tbl mid-tbl">
     <tr><th style="text-align:left">對戰組合</th>
-      <th style="text-align:left">前半（&lt; ${fmtDate(mid)}）</th>
-      <th style="text-align:left">後半（≥ ${fmtDate(mid)}）</th></tr>`;
+      <th>上半季（&lt; ${fmtDate(mid)}）</th>
+      <th>下半季（≥ ${fmtDate(mid)}）</th></tr>`;
   for(let i=0;i<teams.length;i++)for(let j=i+1;j<teams.length;j++){
     const k=`${i}-${j}`;const c=psplit[k]||{pre:[],post:[]};
     const a=teams[i],b=teams[j];
@@ -2726,8 +2744,10 @@ async function exportExcel(){
 
   const COLW=[6,6,13,6,8,13,13,10];
   const HEAD=['場次','週次','日期','星期','時間','主場','客場','狀態'];
-  const thin={style:'thin',color:{argb:'FFBFC7D0'}};
-  const bd={top:thin,left:thin,bottom:thin,right:thin};      // 四邊細格線
+  const NCOL=HEAD.length;
+  const thin={style:'thin',color:{argb:'FF000000'}};         // 黑色細框線
+  const bd={top:thin,left:thin,bottom:thin,right:thin};      // 四邊黑格線
+  const mid={horizontal:'center',vertical:'middle'};         // 所有儲存格置中
 
   // 填隊色：儲存格底色＝該隊主色，字色依亮度自動配白/黑
   const paint=(cell,teamId)=>{
@@ -2735,6 +2755,14 @@ async function exportExcel(){
     const t=team(teamId); if(!t||!t.color)return;
     cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:hexToARGB(t.color)}};
     cell.font={color:{argb:isDarkColor(t.color)?'FFFFFFFF':'FF000000'},bold:true};
+  };
+  // 跨欄置中的標題列（工作表大標／區塊小標）
+  const titleRow=(ws,text,size)=>{
+    const r=ws.addRow([text]);
+    ws.mergeCells(r.number,1,r.number,NCOL);
+    r.getCell(1).font={bold:true,size:size};
+    r.getCell(1).alignment=mid;
+    return r;
   };
   const rowArr=(m)=>{
     const d=parseYMD(m.date);
@@ -2744,16 +2772,17 @@ async function exportExcel(){
   };
   // 在工作表寫一個區塊：可選小標題 + 表頭 + 資料列（含格線與主客場上色）
   const writeBlock=(ws,title,rows)=>{
-    if(title){const tr=ws.addRow([title]);tr.getCell(1).font={bold:true,size:12};}
+    if(title)titleRow(ws,title,12);
     const hd=ws.addRow(HEAD);
     hd.eachCell(c=>{
       c.font={bold:true};c.border=bd;
       c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFEDF0F4'}};
-      c.alignment={horizontal:'center'};
+      c.alignment=mid;
     });
     rows.forEach(m=>{
       const r=ws.addRow(rowArr(m));
-      r.eachCell(c=>c.border=bd);        // 每格都畫格線
+      // 每格：黑框線 + 水平垂直置中
+      for(let i=1;i<=NCOL;i++){const c=r.getCell(i);c.border=bd;c.alignment=mid;}
       paint(r.getCell(6),m.home);        // 主場欄上色
       paint(r.getCell(7),m.away);        // 客場欄上色
     });
@@ -2762,9 +2791,10 @@ async function exportExcel(){
   const setCols=(ws)=>{ws.columns=COLW.map(w=>({width:w}));};
 
   // === 分頁 1：總賽程（全部場次）===
-  const ws0=wb.addWorksheet('總賽程_7隊',{views:[{state:'frozen',ySplit:3}]});
+  const TITLE=schedTitle();            // 頂欄「賽程表名」輸入框
+  const ws0=wb.addWorksheet(`總賽程_${state.teams.length}隊`,{views:[{state:'frozen',ySplit:3}]});
   setCols(ws0);
-  const t0=ws0.addRow(['2026-27 TPBL 總賽程']);t0.getCell(1).font={bold:true,size:14};
+  titleRow(ws0,TITLE,14);
   ws0.addRow([]);
   writeBlock(ws0,'',all);
 
@@ -2775,7 +2805,7 @@ async function exportExcel(){
     const allRows =all.filter(m=>m.home===t.id||m.away===t.id);      // 全部 36
     const ws=wb.addWorksheet(t.name.slice(0,28),{properties:{tabColor:{argb:hexToARGB(t.color)}}});
     setCols(ws);
-    const th=ws.addRow([`${t.name} — 賽程分頁`]);th.getCell(1).font={bold:true,size:14};
+    titleRow(ws,`${TITLE}　—　${t.name} 賽程分頁`,14);
     ws.addRow([]);
     writeBlock(ws,`① 完整總賽程（全 ${all.length} 場）`,all);
     writeBlock(ws,`② ${t.name} 主場（${homeRows.length} 場）`,homeRows);
@@ -2786,7 +2816,9 @@ async function exportExcel(){
   const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
-  a.download=`TPBL_2026-27_賽程_${ymd(new Date())}.xlsx`;
+  // 檔名用賽程表名（去掉檔名不允許的字元、空白轉底線）
+  const fnameBase=TITLE.replace(/[\\/:*?"<>|]/g,'').replace(/\s+/g,'_')||'TPBL_賽程';
+  a.download=`${fnameBase}_${ymd(new Date())}.xlsx`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
