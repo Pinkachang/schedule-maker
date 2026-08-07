@@ -439,8 +439,10 @@ body:not(.tab-schedule) .matrix-fab{display:none}
 .mp-three-item.has b{color:var(--warn)}
 
 /* ---------- 公平性檢視表 ---------- */
-.fair-tbl th{text-align:center}          /* 表頭一律置中（主/客、週次群組…）*/
-.fair-tbl th.fcol-team{text-align:left}  /* 「隊伍」欄維持靠左 */
+/* 註：基底規則是 table.tbl th{text-align:left}（權重 0,1,2），
+   底下的對齊規則一律用 table.tbl.xxx 前綴，否則會被基底蓋掉 */
+table.tbl.fair-tbl th{text-align:center}              /* 表頭一律置中（主/客、週次群組…）*/
+table.tbl.fair-tbl th.fcol-team{text-align:left}      /* 「隊伍」欄維持靠左 */
 .fair-tbl th.grp{text-align:center;border-bottom:1px solid var(--line);background:#f7f9fb}
 .fair-tbl th[rowspan]{vertical-align:middle}
 .fair-tbl th.fcol-3in{text-align:center;white-space:nowrap}
@@ -460,15 +462,18 @@ body:not(.tab-schedule) .matrix-fab{display:none}
 .mid-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
 .mid-h4{margin:18px 0 8px;font-size:13px;font-weight:700;color:var(--ink)}
 .mid-h4:first-of-type{margin-top:6px}
-.mid-tbl th{background:#f7f9fb;text-align:center;font-size:12px;white-space:nowrap}
+.mid-tbl th{background:#f7f9fb;font-size:12px;white-space:nowrap}
+table.tbl.mid-tbl th{text-align:center}
 .mid-tbl th .mth{font-size:10px;color:var(--ink-soft);font-weight:600;margin-top:2px}
-.mid-tbl td{text-align:center;font-variant-numeric:tabular-nums}
-.mid-tbl td.midrowh{text-align:left;font-weight:600;white-space:nowrap}
+.mid-tbl td{font-variant-numeric:tabular-nums}
+table.tbl.mid-tbl td{text-align:center}               /* 0/1 這類數字置中 */
+.mid-tbl td.midrowh{font-weight:600;white-space:nowrap}
+table.tbl.mid-tbl td.midrowh{text-align:left}         /* 列首隊名維持靠左 */
 .mid-tbl td.middiag{background:#f2f4f7}
 .mid-cell{font-weight:600}
 .mid-cell.mid-bunch{background:#fdecec;color:var(--bad);font-weight:800}
 .mid-cell.mid-lean{background:#fff5e6;color:var(--warn);font-weight:700}
-.mid-list{text-align:center;line-height:2}
+.mid-list{line-height:2}
 .mid-chip{display:inline-flex;align-items:center;gap:3px;background:#f1f4f8;border:1px solid var(--line-soft);
   border-radius:11px;padding:1px 7px 1px 6px;font-size:11px;margin:1px 4px 1px 0;white-space:nowrap;vertical-align:2px}
 .mid-chip .mc-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
@@ -744,6 +749,14 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
       <button class="btn" onclick="clearLocal()">🗑 清除本機暫存並重來</button>
     </div>
 
+    <div class="card" style="border-color:#f0d9a8">
+      <h3 style="color:var(--warn)">🧹 清除所有客隊</h3>
+      <p class="hint">只把<b>每一場比賽的客隊清成「待訂」</b>，<b>主場骨架完整保留</b>——日期、時間、主隊、週次全部不動。<br>
+        適用於主場骨架已定案、想把客隊全部倒掉重排的情況。禁排、場館檔期（含協調中）都不會動。<br>
+        <b style="color:var(--warn)">此動作不可復原</b>，建議先按下方視窗裡的「先下載備份」存一份 JSON。</p>
+      <button class="btn" style="border-color:var(--warn);color:var(--warn)" onclick="openClearAway()">🧹 清除所有客隊</button>
+    </div>
+
     <div class="card" style="border-color:#f1c4c2">
       <h3 style="color:var(--bad)">⚠ 清空賽程</h3>
       <p class="hint">一鍵清掉<b>目前排好的所有比賽</b>，並連帶刪除<b>所有「協調中」的可用檔期</b>。隊伍、賽季、時段、禁排、確定狀態的檔期都會保留。<br>
@@ -887,6 +900,31 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
     </div>
     <div class="modal-foot">
       <button class="btn ghost" onclick="closeAvailConfirm()">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 清除所有客隊：二次確認框 -->
+<div class="overlay" id="clearAwayConfirm" onclick="if(event.target===this)closeClearAway()">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-head">
+      <h3 style="color:var(--warn)">🧹 清除所有客隊</h3>
+      <button class="mclose" onclick="closeClearAway()">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="margin:0 0 12px;font-size:13.5px;line-height:1.7" id="clearAwaySummary"></p>
+      <p style="margin:0 0 14px;font-size:13px;line-height:1.6;color:var(--ink-soft)">
+        會保留：<b>主場骨架</b>（日期／時間／主隊／週次）、隊伍、賽季、時段、禁排、全部場館檔期。<br>
+        會清除：<b style="color:var(--warn)">所有比賽的客隊</b>，一律改為「待訂」。
+      </p>
+      <div style="background:var(--warn-bg);border-radius:8px;padding:11px 13px;margin-bottom:6px">
+        <p style="margin:0 0 9px;font-size:12.5px;font-weight:600;color:var(--warn)">此動作不可復原，強烈建議先備份：</p>
+        <button class="btn sm" style="background:#fff" onclick="doSave()">💾 先下載備份 JSON</button>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeClearAway()">取消</button>
+      <button class="btn" style="background:var(--warn);border-color:var(--warn);color:#fff" onclick="doClearAway()">確認清除客隊</button>
     </div>
   </div>
 </div>
@@ -1088,6 +1126,30 @@ function clearLocal(){
   loadEditorName();
   renderTeamSelects();renderAll();
   toast('已清除本機暫存');
+}
+
+/* ---------- 清除所有客隊（保留主場骨架，客隊一律改回待訂）----------
+   與「清空賽程」的差別：這裡不刪任何一場比賽、不動 venueAvail，
+   只把 matches 裡每一場的 away 改成 'TBD'，讓主場骨架可以重排客隊。 */
+function countAssignedAway(){
+  return Object.values(state.matches).filter(m=>m.away&&m.away!=='TBD').length;
+}
+function openClearAway(){
+  const nAll=Object.keys(state.matches).length;
+  const nAway=countAssignedAway();
+  document.getElementById('clearAwaySummary').innerHTML= nAway
+    ? `目前共 <b>${nAll} 場</b>比賽，其中 <b style="color:var(--warn)">${nAway} 場已排客隊</b>，將全部改為「待訂」。`
+    : `目前 <b>${nAll} 場</b>比賽的客隊<b>都已是「待訂」</b>，沒有需要清除的項目。`;
+  document.getElementById('clearAwayConfirm').classList.add('show');
+}
+function closeClearAway(){document.getElementById('clearAwayConfirm').classList.remove('show')}
+function doClearAway(){
+  const n=countAssignedAway();
+  if(n===0){closeClearAway();toast('沒有已排客隊可清除');return}
+  Object.values(state.matches).forEach(m=>{m.away='TBD'});
+  closeClearAway();
+  renderAll();                 // renderAll 內含 autoSave
+  toast(`已清除 ${n} 場比賽的客隊，主場骨架保留`);
 }
 
 /* ---------- 清空賽程（範圍二：清比賽＋刪所有協調中檔期）---------- */
@@ -2855,7 +2917,9 @@ function init(){
   document.body.classList.add('tab-schedule');  // 初始為排程頁
   // Esc 關閉對戰表浮層
   document.addEventListener('keydown',e=>{
-    if(e.key==='Escape'&&document.getElementById('matrixPanel').classList.contains('show'))closeMatrixPanel();
+    if(e.key!=='Escape')return;
+    if(document.getElementById('matrixPanel').classList.contains('show'))closeMatrixPanel();
+    if(document.getElementById('clearAwayConfirm').classList.contains('show'))closeClearAway();
   });
 }
 init();
