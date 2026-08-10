@@ -1071,7 +1071,7 @@ function blankState(){
     homeRounds: 3,         // 每隊在主場對每個對手的對戰次數（主場輪數）
     leagueBlackouts: [],   // {id,start,end,reason}
     teamBlackouts: [],     // {id,teamId,scope,start,end,reason}  scope:'both'|'home'|'away'（無 scope 視為 both）
-    venueAvail: [],      // {teamId,date,time,status}  (date: 'yyyy-mm-dd')
+    venueAvail: [],      // 白名單：{teamId,date,time}（date:'yyyy-mm-dd'，time:''＝全天）
     matches: {},           // 'date|time' -> {home,away}
     meta: {savedBy:'', savedAt:''},  // 存檔者/時間（存 JSON 時寫入，載入時顯示）
   };
@@ -1489,6 +1489,7 @@ function switchTab(t){
   if(t==='analysis')renderAnalysis();
   if(t==='setup')renderSetup();
   if(t==='blackout')renderBlackout();
+  if(t==='homecal')renderHomeCal();
 }
 /* 賽程分析頁：公平性檢視 + 對戰分布 */
 function renderAnalysis(){
@@ -1528,6 +1529,7 @@ function renderAll(){
   if(currentTab==='schedule')renderSchedule();
   if(currentTab==='preview')renderPreview();
   if(currentTab==='overview')renderOverview();
+  if(currentTab==='analysis')renderAnalysis();
   if(currentTab==='setup')renderSetup();
   if(currentTab==='blackout')renderBlackout();
   if(currentTab==='homecal')renderHomeCal();
