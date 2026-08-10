@@ -228,19 +228,12 @@ select.scope-sel{padding:4px 6px;font-size:12px;min-width:96px;width:auto}
 }
 .slot.empty.has-avail{border-color:#d8c0a8}
 .slot.conflict{border-color:var(--bad)!important;background:var(--bad-bg)!important;border-width:1.5px}
-.slot.tentative{border-left:4px solid var(--warn)}
-.slot.tentative.conflict{border-left:4px solid var(--warn)}
-.tent-badge{
+.slot.offwl{border-left:4px solid var(--warn)}
+.slot.offwl.conflict{border-left:4px solid var(--warn)}
+.offwl-badge{
   position:absolute;top:5px;right:6px;font-size:9px;font-weight:700;
   color:#fff;background:var(--warn);padding:1px 6px;border-radius:4px;letter-spacing:.5px;
 }
-.status-pill{
-  border:1px solid var(--line);background:#fff;border-radius:20px;padding:3px 10px;
-  font-size:11.5px;font-weight:600;transition:.12s;
-}
-.status-pill.ok{color:var(--ok);border-color:#bfe6d4}
-.status-pill.tent{color:#fff;background:var(--warn);border-color:var(--warn)}
-.status-pill:hover{opacity:.85}
 .issue.tent{border-left-color:var(--warn)}
 .issue.tent .ico{color:var(--warn)}
 .match{display:flex;flex-direction:column;gap:2px}
@@ -393,6 +386,35 @@ select.scope-sel{padding:4px 6px;font-size:12px;min-width:96px;width:auto}
 .vcal-cell.vc-has.vc-sel{box-shadow:none}
 .vcal-cell .vdot{position:absolute;bottom:3px;width:4px;height:4px;border-radius:50%;background:var(--ok)}
 .vcal-cell.vc-sel .vdot{background:#fff}
+/* ---------- 主場檔期日曆 ---------- */
+.hc-toolbar{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+.hc-chk{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-soft);cursor:pointer;user-select:none;padding-bottom:6px}
+.hc-chk input{margin:0;cursor:pointer}
+.hc-month{margin-bottom:26px}
+.hc-mtitle{font-size:14px;font-weight:700;margin:0 0 8px;display:flex;align-items:baseline;gap:10px}
+.hc-mtitle .hc-mcount{font-size:11.5px;font-weight:400;color:var(--ink-soft)}
+.hc-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+.hc-dow{text-align:center;font-size:11px;color:var(--ink-soft);font-weight:600;padding:3px 0}
+.hc-dow.we{color:var(--court)}
+.hc-cell{min-height:82px;border:1px solid var(--line-soft);border-radius:8px;padding:5px 5px 6px;
+  background:#fff;display:flex;flex-direction:column;gap:4px;overflow:hidden}
+.hc-cell.hc-pad{border:none;background:transparent}
+.hc-cell.hc-off{background:var(--lock-bg);border-style:dashed}      /* 賽季外 */
+.hc-cell.hc-we{background:#fbfdff}                                   /* 週末 */
+.hc-cell.hc-bo{background:#fdecec;border-color:#f1b9b6}              /* 全聯盟禁排 */
+.hc-cell.hc-dim{opacity:.32}
+.hc-dnum{font-size:11.5px;font-weight:700;color:var(--ink-soft);line-height:1}
+.hc-cell.hc-off .hc-dnum{color:var(--lock)}
+.hc-bomsg{font-size:10px;color:var(--bad);font-weight:600;line-height:1.3}
+.hc-chips{display:flex;flex-wrap:wrap;gap:3px}
+.hc-chip{display:inline-flex;align-items:center;gap:2px;font-size:10.5px;font-weight:600;
+  border-radius:4px;padding:1px 4px;white-space:nowrap;line-height:1.5}
+.hc-chip.hc-free{background:#fff;border:1px dashed var(--line);color:var(--ink-soft);font-weight:400}
+.hc-chip .hc-tick{font-size:9px}
+.hc-none{font-size:10px;color:var(--lock)}
+.hc-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--ink-soft);align-items:center;margin-top:4px}
+.hc-legend .hk{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px}
+
 .vcal-foot{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px}
 .vcal-foot .vcount{font-size:12.5px;color:var(--ink-soft)}
 .vcal-foot .vcount b{color:var(--court)}
@@ -454,6 +476,20 @@ table.tbl.fair-tbl th.fcol-team{text-align:left}      /* 「隊伍」欄維持�
 .fair-tbl td.fnum-wend.fair-hi{background:#fdecec}
 .fair-tbl td.fnum-wend.fair-lo{background:#eaf4fb}
 .fair-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--ink-soft);align-items:center}
+/* 出賽日勾選列 */
+.fair-daybar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:12px}
+.fair-daybar .fdb-label{font-size:12.5px;color:var(--ink-soft);font-weight:600;margin-right:2px}
+.fair-daybar .fdb-auto{color:var(--court);font-weight:600}
+.fair-daybar .fdb-manual{color:var(--warn);font-weight:600}
+.fday{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:7px;
+  padding:5px 10px;font-size:12.5px;background:#fff;cursor:pointer;user-select:none;transition:.12s}
+.fday:hover{border-color:var(--court)}
+.fday.on{background:#eef4fb;border-color:#bcd6ea;font-weight:600}
+.fday.empty span{color:var(--lock)}
+.fday input{margin:0;cursor:pointer}
+.fday .fday-0{font-size:10px;background:#eef1f5;color:var(--lock);border-radius:9px;padding:0 5px;font-weight:600}
+.fair-warn{margin-top:10px;font-size:12.5px;line-height:1.6;color:var(--warn);
+  background:var(--warn-bg);border:1px solid #f0d9a8;border-radius:8px;padding:9px 12px}
 .fair-legend .fk{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:3px}
 .fair-legend .fk-hi{background:#fdecec;border:1px solid #f1b9b6}
 .fair-legend .fk-lo{background:#eaf4fb;border:1px solid #bcd6ea}
@@ -580,7 +616,7 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
   <div class="spacer"></div>
   <span class="season-label" id="seasonLabel"></span>
   <span id="autoSaveHint" style="font-size:11.5px;color:#7c8a99;white-space:nowrap"></span>
-  <input id="schedTitle" placeholder="賽程表名" title="匯出 Excel 時，寫在每張工作表最上方的表格標題（例：2026-27 TPBL 總賽程 V5）"
+  <input id="schedTitle" placeholder="賽程表名" title="匯出 Excel 的表格標題與檔名（例：2026-27 TPBL 總賽程 V5）。隊伍分頁的區塊標題會自動取「總賽程」之前的文字當賽季前綴，例如「2026-27 TPBL 戰神 主場賽事（18 場）」"
     style="width:190px;padding:6px 9px;border-radius:7px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#fff;font-size:12.5px"
     oninput="setSchedTitle(this.value)">
   <input id="editorName" placeholder="你的名字" title="存檔時記錄是誰存的（記在本機）"
@@ -597,6 +633,7 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
   <button class="tab" data-tab="preview" onclick="switchTab('preview')">賽程預覽</button>
   <button class="tab" data-tab="overview" onclick="switchTab('overview')">進度總覽 <span class="badge" id="issueBadge" style="display:none">0</span></button>
   <button class="tab" data-tab="analysis" onclick="switchTab('analysis')">賽程分析</button>
+  <button class="tab" data-tab="homecal" onclick="switchTab('homecal')">主場檔期日曆</button>
   <button class="tab" data-tab="setup" onclick="switchTab('setup')">隊伍與賽季</button>
   <button class="tab" data-tab="blackout" onclick="switchTab('blackout')">禁排與場館</button>
 </div>
@@ -635,7 +672,7 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
         <select class="input" id="previewTeamSel" onchange="setPreviewTeam(this.value)" style="min-width:160px"></select>
       </div>
       <span class="spacer" style="flex:1"></span>
-      <span class="tiny muted">🟡 黃左框＝協調中　主/客＝該隊主客場</span>
+      <span class="tiny muted">🟡 黃左框＝白名單外　主/客＝該隊主客場</span>
     </div>
     <div id="previewBanner"></div>
     <div id="previewContainer"></div>
@@ -665,8 +702,8 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
       <div id="issueList"></div>
     </div>
     <div class="card">
-      <h3>🤝 協調中的比賽 <span id="tentCount" class="muted tiny"></span></h3>
-      <p class="hint">這些比賽排在尚未確定的「協調中」檔期上，待球團確認後，記得到「禁排與場館」把對應檔期切回「確定」。</p>
+      <h3>⚠ 白名單外的比賽 <span id="tentCount" class="muted tiny"></span></h3>
+      <p class="hint">這些主場比賽排在球團回報的可用日以外。不是錯誤，但請記得跟球團確認場地；確認後可到「禁排與場館」把該日補進白名單，這裡就會自動消失。</p>
       <div id="tentList"></div>
     </div>
   </div>
@@ -676,7 +713,8 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
     <div class="section-head"><h2>賽程分析</h2><p>公平性檢視（各出賽日主客分配）與對戰分布（上下半季群聚）</p></div>
     <div class="card">
       <h3>⚖️ 公平性檢視</h3>
-      <p class="hint">TPBL 賽事集中在<b>週三、五、六、日</b>四個出賽日，各日票房與客場移動負擔不同。這裡列出每隊在各出賽日各排了幾場主／客場，以及整季「一週三戰」發生次數，方便檢視分配是否平均。<b>同一欄中最高與最低相差較大者會標色</b>，僅供你判斷，工具不替你定義公平。</p>
+      <p class="hint">各出賽日的票房與客場移動負擔不同。這裡列出每隊在各出賽日各排了幾場主／客場，以及整季「一週三戰」發生次數，方便檢視分配是否平均。<b>同一欄中最高與最低相差較大者會標色</b>，僅供你判斷，工具不替你定義公平。<br>
+        欄位<b>預設自動跟著賽程走</b>——賽程裡出現哪幾個星期就顯示哪幾欄（目前 TPBL 為三、五、六、日；日後若加禮拜四賽事會自動長出來）。也可以在下方自行勾選只看某幾天。</p>
       <div style="overflow-x:auto" id="fairnessWrap"></div>
     </div>
     <div class="card">
@@ -696,6 +734,24 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
   </div>
 
   <!-- ============ 隊伍與賽季 ============ -->
+  <!-- ============ 主場檔期日曆 ============ -->
+  <div class="view" id="view-homecal">
+    <div class="section-head"><h2>主場檔期日曆</h2><p>依球團回報的白名單，逐月列出每天有哪些隊伍可以排主場</p></div>
+    <div class="card">
+      <p class="hint">月份範圍依「隊伍與賽季」的賽季區間<b>整月顯示</b>——例如賽季 10/17 開打、5/16 結束，就會顯示完整的 10 月到 5 月。
+        每格列出<b>當天有回報可用主場檔期的隊伍</b>；已在該日排定主場的隊伍會加上 ✓。<b>未上傳任何檔期的隊伍不受白名單限制</b>，因此不會出現在格子裡（可勾選下方選項一併列出）。</p>
+      <div class="hc-toolbar">
+        <div class="field" style="min-width:170px"><label>隊伍</label>
+          <select class="input" id="hcTeam" onchange="renderHomeCal()"></select></div>
+        <label class="hc-chk"><input type="checkbox" id="hcOnlyAvail" onchange="renderHomeCal()"> 只顯示有檔期的日子</label>
+        <label class="hc-chk"><input type="checkbox" id="hcShowFree" onchange="renderHomeCal()"> 一併列出未上傳檔期的隊伍</label>
+        <span style="flex:1"></span>
+        <span class="tiny muted" id="hcSummary"></span>
+      </div>
+      <div id="homeCalWrap"></div>
+    </div>
+  </div>
+
   <div class="view" id="view-setup">
     <div class="grid2">
       <div class="card">
@@ -752,14 +808,14 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
     <div class="card" style="border-color:#f0d9a8">
       <h3 style="color:var(--warn)">🧹 清除所有客隊</h3>
       <p class="hint">只把<b>每一場比賽的客隊清成「待訂」</b>，<b>主場骨架完整保留</b>——日期、時間、主隊、週次全部不動。<br>
-        適用於主場骨架已定案、想把客隊全部倒掉重排的情況。禁排、場館檔期（含協調中）都不會動。<br>
+        適用於主場骨架已定案、想把客隊全部倒掉重排的情況。禁排、場館檔期（白名單）都不會動。<br>
         <b style="color:var(--warn)">此動作不可復原</b>，建議先按下方視窗裡的「先下載備份」存一份 JSON。</p>
       <button class="btn" style="border-color:var(--warn);color:var(--warn)" onclick="openClearAway()">🧹 清除所有客隊</button>
     </div>
 
     <div class="card" style="border-color:#f1c4c2">
       <h3 style="color:var(--bad)">⚠ 清空賽程</h3>
-      <p class="hint">一鍵清掉<b>目前排好的所有比賽</b>，並連帶刪除<b>所有「協調中」的可用檔期</b>。隊伍、賽季、時段、禁排、確定狀態的檔期都會保留。<br>
+      <p class="hint">一鍵清掉<b>目前排好的所有比賽</b>。隊伍、賽季、時段、禁排、可用檔期（白名單）都會保留。<br>
         <b style="color:var(--bad)">此動作不可復原</b>，建議清空前先按下方「先下載備份」存一份 JSON。</p>
       <button class="btn" style="border-color:var(--bad);color:var(--bad)" onclick="openClearSchedule()">🗑 清空所有賽程</button>
     </div>
@@ -804,7 +860,7 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
 
     <div class="card">
       <h3>場館可用檔期（球團回報）</h3>
-      <p class="hint">上傳球團填寫的 Excel（主場<b>可以使用</b>的日期）。<b>一旦某隊有上傳檔期，該隊主場就只能排在清單內的日期時段</b>；未上傳的隊伍主場不受限制。可重複上傳，採累加。<br>檔期可標為「確定」或「<b style="color:var(--warn)">協調中</b>」——排在協調中檔期上的比賽，會在排程與總覽特別標示。</p>
+      <p class="hint">上傳球團填寫的 Excel（主場<b>可以使用</b>的日期）。<b>一旦某隊有上傳檔期，該隊主場就只能排在清單內的日期時段</b>；未上傳的隊伍主場不受限制。可重複上傳，採累加。<br>若真的必須排在白名單外，排入時會跳出警示讓你確認，<b>不會擋你</b>，該場次之後會持續標示「白名單外」方便追蹤。</p>
       <div class="file-drop" onclick="document.getElementById('venueFile').click()">
         📄 點此上傳球團回報 Excel（.xlsx）<br><span class="tiny">格式：工作表名＝隊名，欄位含「日期」「時段」「備註」</span>
       </div>
@@ -821,10 +877,6 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
             <select class="input" id="vmTime">
               <option value="">全天</option><option value="14:30">14:30</option>
               <option value="17:00">17:00</option><option value="19:00">19:00</option>
-            </select></div>
-          <div class="field" style="flex:1"><label>套用狀態</label>
-            <select class="input" id="vmStatus">
-              <option value="confirmed">✓ 確定</option><option value="tentative">🤝 協調中</option>
             </select></div>
         </div>
 
@@ -878,28 +930,25 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
 
 <div class="toast" id="toast"></div>
 
-<!-- 白名單外排主場：補檔期確認 box -->
-<div class="overlay" id="availConfirm">
-  <div class="modal" style="max-width:380px">
+<!-- 白名單外排主場：警示（不阻擋） -->
+<div class="overlay" id="offWhitelistWarn" onclick="if(event.target===this)closeOffWhitelistWarn()">
+  <div class="modal" style="max-width:400px">
     <div class="modal-head">
-      <h3>此日不在可用檔期內</h3>
-      <button class="mclose" onclick="closeAvailConfirm()">×</button>
+      <h3 style="color:var(--warn)">⚠ 這天不在白名單內</h3>
+      <button class="mclose" onclick="closeOffWhitelistWarn()">×</button>
     </div>
     <div class="modal-body">
-      <p style="margin:0 0 14px;font-size:13.5px;line-height:1.6">
-        <b id="acTeam"></b> 在 <b id="acWhen"></b> 並不在球團已回報的主場可用檔期內。<br>
-        若仍要排入，系統會自動補一筆該隊這天的可用檔期。請選擇這筆檔期的狀態：
+      <p style="margin:0 0 12px;font-size:13.5px;line-height:1.7">
+        <b id="owTeam"></b> 在 <b id="owWhen"></b> 不在該隊回報的可用主場日內。<br>
+        還是要排嗎？
       </p>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <button class="btn accent" style="justify-content:center" onclick="confirmAvail('tentative')">🤝 標為協調中並排入</button>
-        <button class="btn" style="justify-content:center" onclick="confirmAvail('confirmed')">✓ 標為確定並排入</button>
-      </div>
-      <p class="tiny muted" style="margin:12px 0 0;line-height:1.5">
-        建議先標「協調中」，待與球團確認場地後，到「禁排與場館」把該筆檔期切回「確定」。
+      <p class="tiny muted" style="margin:0;line-height:1.6">
+        排入後不會更動白名單，該場次會在排程與進度總覽持續標示「白名單外」，方便你之後跟球團確認場地。
       </p>
     </div>
     <div class="modal-foot">
-      <button class="btn ghost" onclick="closeAvailConfirm()">取消</button>
+      <button class="btn" onclick="closeOffWhitelistWarn()">取消</button>
+      <button class="btn" style="background:var(--warn);border-color:var(--warn);color:#fff" onclick="confirmOffWhitelist()">仍要排入</button>
     </div>
   </div>
 </div>
@@ -939,8 +988,8 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
     <div class="modal-body">
       <p style="margin:0 0 12px;font-size:13.5px;line-height:1.7" id="clearSchedSummary"></p>
       <p style="margin:0 0 14px;font-size:13px;line-height:1.6;color:var(--ink-soft)">
-        會保留：隊伍、賽季、時段、禁排、<b>確定狀態</b>的可用檔期。<br>
-        會刪除：<b style="color:var(--bad)">全部比賽</b>＋<b style="color:var(--bad)">全部協調中檔期</b>。
+        會保留：隊伍、賽季、時段、禁排、<b>全部可用檔期（白名單）</b>。<br>
+        會刪除：<b style="color:var(--bad)">全部比賽</b>。
       </p>
       <div style="background:var(--warn-bg);border-radius:8px;padding:11px 13px;margin-bottom:6px">
         <p style="margin:0 0 9px;font-size:12.5px;font-weight:600;color:var(--warn)">此動作不可復原，強烈建議先備份：</p>
@@ -982,9 +1031,9 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
      - weekNoMap()：WEEK 編號（定義 B：只有排了比賽的週才編號、接續，聯盟實務勿改）
      - teamStats()：平日/假日主客、一週三戰次數統計（計分板詳細模式與公平性表共用）
      - buildMatrixHTML()：對戰矩陣（進度總覽與排程頁浮層共用）
-     - cleanupAutoTentative()：白名單外排賽補的協調中檔期，移除/換主隊時的連帶清理
-     - exportExcel()：匯出格式（含週次欄、狀態寫確定/協調中；全表黑細框線＋置中，
-                      標題取自頂欄「賽程表名」state.schedTitle，跨欄置中於 A1:H1）
+     - matchOffWhitelist()：主場排在白名單外的判定（純提醒，不阻擋排賽）
+     - exportExcel()：匯出格式（7 欄、無狀態欄；微軟正黑體、藍底白字標題＋表頭、
+                      黑細框線＋置中；隊伍分頁三個區塊並排；標題取自 state.schedTitle）
      - normalizeTeams() / tbScope()：載入舊資料的向後相容（undefined 補預設、'' 保留）
    =================================================================== */
 
@@ -1016,6 +1065,7 @@ function blankState(){
     teams: DEFAULT_TEAMS.map(t=>({...t})),  // 每隊含 logo（base64 字串，空＝用顏色）
     season: {start:'2026-10-03', end:'2027-06-30', midDate:''},  // midDate 空＝畫面自動帶賽季中點
     schedTitle: '2026-27 TPBL 總賽程',   // 頂欄可編輯；匯出 Excel 各工作表最上方的表格標題
+    analysisDays: null,    // 公平性檢視要顯示哪幾個出賽日；null＝自動（依實際排賽日），陣列＝手動指定 [0..6]
     slots: DEFAULT_SLOTS.map(s=>({...s})),
     homeRounds: 3,         // 每隊在主場對每個對手的對戰次數（主場輪數）
     leagueBlackouts: [],   // {id,start,end,reason}
@@ -1152,23 +1202,20 @@ function doClearAway(){
   toast(`已清除 ${n} 場比賽的客隊，主場骨架保留`);
 }
 
-/* ---------- 清空賽程（範圍二：清比賽＋刪所有協調中檔期）---------- */
+/* ---------- 清空賽程（只清比賽；白名單為球團回報資料，一律保留）---------- */
 function openClearSchedule(){
   const nMatch=Object.keys(state.matches).length;
-  const nTent=state.venueAvail.filter(v=>v.status==='tentative').length;
   document.getElementById('clearSchedSummary').innerHTML=
-    `即將刪除 <b style="color:var(--bad)">${nMatch} 場已排比賽</b> 與 <b style="color:var(--bad)">${nTent} 筆協調中檔期</b>。`;
+    `即將刪除 <b style="color:var(--bad)">${nMatch} 場已排比賽</b>。`;
   document.getElementById('clearSchedConfirm').classList.add('show');
 }
 function closeClearSchedule(){document.getElementById('clearSchedConfirm').classList.remove('show')}
 function doClearSchedule(){
   const nMatch=Object.keys(state.matches).length;
-  const nTent=state.venueAvail.filter(v=>v.status==='tentative').length;
-  state.matches={};                                              // 清空全部比賽
-  state.venueAvail=state.venueAvail.filter(v=>v.status!=='tentative');  // 刪所有協調中檔期，保留確定
+  state.matches={};
   closeClearSchedule();
   renderAll();
-  toast(`已清空 ${nMatch} 場比賽、刪除 ${nTent} 筆協調中檔期`);
+  toast(`已清空 ${nMatch} 場比賽`);
 }
 // 補齊舊資料缺的欄位（向後相容）
 function normalizeTeams(){
@@ -1182,21 +1229,15 @@ function normalizeTeams(){
       t.logo=(def&&def.logo)?def.logo:'';
     }
   });
-  // 協調中檔期一律修正為「整天」（time:''）：
-  // 舊資料可能有「協調中檔期綁特定時段、但比賽被換到別時段而脫鉤」的情況，
-  // 導致匯出誤標確定。改整天後檔期涵蓋整日，判定不再受時段影響。
-  // 只動協調中；確定檔期維持原樣（可能是球團明確回報的特定時段）。
+  // 舊資料相容：可用檔期已取消「確定／協調中」概念，
+  // 白名單只代表「球團回報這天可用」。移除殘留的 status 欄位並去除重複。
   if(Array.isArray(state.venueAvail)){
-    state.venueAvail.forEach(v=>{ if(v.status==='tentative') v.time=''; });
-    // 去除因改整天而重複的協調中（同隊同日整天協調中只留一筆）
     const seen=new Set();
     state.venueAvail=state.venueAvail.filter(v=>{
-      if(v.status==='tentative' && v.time===''){
-        const key=v.teamId+'|'+v.date;
-        if(seen.has(key))return false;
-        seen.add(key);
-      }
-      return true;
+      delete v.status;
+      const key=v.teamId+'|'+v.date+'|'+(v.time||'');
+      if(seen.has(key))return false;
+      seen.add(key);return true;
     });
   }
 }
@@ -1324,20 +1365,15 @@ function availEntry(teamId,dateStr,time){
     && (v.time===time||v.time==='全天'||!v.time)) || null;
 }
 // 某日某時段「有上傳白名單且命中」的隊伍清單（給空格小色點提示用）
-// 只列有上傳檔期的隊（沒上傳的到處可排，提示無意義）；回傳 [{team, status}]
+// 只列有上傳檔期的隊（沒上傳的到處可排，提示無意義）；回傳 [team]
 function availTeamsAt(dateStr,time){
-  const out=[];
-  state.teams.forEach(t=>{
-    if(!teamHasAvail(t.id))return;          // 沒上傳檔期 → 不提示
-    const e=availEntry(t.id,dateStr,time);
-    if(e)out.push({team:t,status:e.status});
-  });
-  return out;
+  return state.teams.filter(t=>teamHasAvail(t.id) && availEntry(t.id,dateStr,time));
 }
-// 某場比賽是否排在「協調中」檔期上（依主隊檔期狀態判定）
-function matchTentative(dateStr,time,homeId){
-  const e=availEntry(homeId,dateStr,time);
-  return !!(e && e.status==='tentative');
+// 某場比賽的主隊，是否排在自己白名單以外的日子。
+// 白名單外只是「提醒」不是錯誤：排入時跳警示，排入後在畫面上持續標橘，
+// 讓你隨時看得到哪些場次還沒跟球團把場地敲定，但不阻擋任何操作。
+function matchOffWhitelist(dateStr,time,homeId){
+  return venueBlocked(homeId,dateStr,time);
 }
 
 /* ===================================================================
@@ -1463,6 +1499,16 @@ function renderAnalysis(){
 function schedTitle(){
   return (state.schedTitle||'').trim() || '2026-27 TPBL 總賽程';
 }
+/* 賽季前綴：把「賽程表名」尾端的「總賽程／賽程表／總表／賽程 + 版本號」切掉，
+   剩下的當作隊伍分頁區塊標題的前綴。
+     「2026-27 TPBL 總賽程 V4」→「2026-27 TPBL」
+     「2026-27 TPBL V4」      →「2026-27 TPBL」（找不到關鍵字就原樣使用）
+   切完若變成空字串，退回完整表名，避免標題只剩隊名。 */
+function seasonPrefix(){
+  const t=schedTitle();
+  const p=t.replace(/\s*(?:總賽程|賽程表|總表|賽程).*$/,'').trim();
+  return p||t;
+}
 function setSchedTitle(v){
   state.schedTitle=v;
   autoSave();
@@ -1483,6 +1529,7 @@ function renderAll(){
   if(currentTab==='overview')renderOverview();
   if(currentTab==='setup')renderSetup();
   if(currentTab==='blackout')renderBlackout();
+  if(currentTab==='homecal')renderHomeCal();
   autoSave();
 }
 
@@ -1556,9 +1603,9 @@ function renderSchedule(){
         }else if(m){
           filled++;
           const conflict=slotFlags[key];
-          const tentative=matchTentative(s.date,s.time,m.home);
+          const offWl=matchOffWhitelist(s.date,s.time,m.home);   // 白名單外 → 標橘提醒
           const h=team(m.home),a=team(m.away);
-          html+=`<div class="slot filled${conflict?' conflict':''}${tentative?' tentative':''}" data-date="${s.date}" data-time="${s.time}"
+          html+=`<div class="slot filled${conflict?' conflict':''}${offWl?' offwl':''}" data-date="${s.date}" data-time="${s.time}"
             draggable="true"
             ondragstart="onSlotDragStart(event,'${s.date}','${s.time}')"
             ondragend="onSlotDragEnd(event)"
@@ -1568,7 +1615,7 @@ function renderSchedule(){
             onclick="openModal('${s.date}','${s.time}')">
             <span class="stime">${s.time}</span>
             <span class="drag-handle" title="拖曳可與同日其他時段對調">⠿</span>
-            ${tentative?'<span class="tent-badge">協調中</span>':''}
+            ${offWl?'<span class="offwl-badge" title="這天不在該隊回報的可用主場日內">白名單外</span>':''}
             <div class="match">
               <div class="mteam">${teamMark(h,16,'mlogo')}${teamName(m.home)} <span class="home-badge">主</span></div>
               <span class="vs">VS</span>
@@ -1578,8 +1625,8 @@ function renderSchedule(){
         }else{
           // 空格：顯示白名單小色點（有上傳檔期且命中此時段的隊）
           const avTeams=availTeamsAt(s.date,s.time);
-          const dots=avTeams.length?`<div class="avail-dots" title="可排主場：${avTeams.map(x=>x.team.name+(x.status==='tentative'?'(協調中)':'')).join('、')}">
-            ${avTeams.map(x=>`<span class="ad" style="background:${x.team.color}${x.status==='tentative'?';opacity:.45':''}"></span>`).join('')}</div>`:'';
+          const dots=avTeams.length?`<div class="avail-dots" title="可排主場：${avTeams.map(t=>t.name).join('、')}">
+            ${avTeams.map(t=>`<span class="ad" style="background:${t.color}"></span>`).join('')}</div>`:'';
           html+=`<div class="slot empty${avTeams.length?' has-avail':''}" data-date="${s.date}" data-time="${s.time}"
             ondragover="onSlotDragOver(event,'${s.date}','${s.time}')"
             ondragleave="onSlotDragLeave(event)"
@@ -1607,19 +1654,21 @@ function renderSchedule(){
 function isWeekend(dateStr){const wd=parseYMD(dateStr).getDay();return wd===0||wd===6}
 function teamStats(){
   const st={};
-  // 保留 wk/wend（計分板浮動提示沿用）；新增 dNH/dNA：週N(3/5/6/0)主/客
-  state.teams.forEach(t=>st[t.id]={wkHome:0,wkAway:0,wendHome:0,wendAway:0,home:0,away:0,threeIn:0,
-    d3H:0,d3A:0,d5H:0,d5A:0,d6H:0,d6A:0,d0H:0,d0A:0});
-  const dayKey={3:'d3',5:'d5',6:'d6',0:'d0'};   // 出賽日 → 欄位前綴（其他日不計入四欄）
+  // 保留 wk/wend（計分板浮動提示沿用）；byDay[0..6]={H,A} 為各星期的主/客場數。
+  // 註：這裡「七天全記」，不預設哪幾天是出賽日；要顯示哪幾欄由 analysisDays() 決定，
+  //     這樣未來加禮拜四賽事時，統計端不需要再改。
+  state.teams.forEach(t=>{
+    st[t.id]={wkHome:0,wkAway:0,wendHome:0,wendAway:0,home:0,away:0,threeIn:0,byDay:{}};
+    for(let d=0;d<7;d++)st[t.id].byDay[d]={H:0,A:0};
+  });
   const entries=Object.entries(state.matches).map(([k,v])=>{
     const[date,time]=k.split('|');return{date,time,home:v.home,away:v.away};
   });
   entries.forEach(m=>{
     const wd=parseYMD(m.date).getDay();
     const wend=(wd===0||wd===6);
-    const dk=dayKey[wd];
-    if(st[m.home]){st[m.home].home++; wend?st[m.home].wendHome++:st[m.home].wkHome++; if(dk)st[m.home][dk+'H']++;}
-    if(m.away!=='TBD'&&st[m.away]){st[m.away].away++; wend?st[m.away].wendAway++:st[m.away].wkAway++; if(dk)st[m.away][dk+'A']++;}
+    if(st[m.home]){st[m.home].home++; wend?st[m.home].wendHome++:st[m.home].wkHome++; st[m.home].byDay[wd].H++;}
+    if(m.away!=='TBD'&&st[m.away]){st[m.away].away++; wend?st[m.away].wendAway++:st[m.away].wkAway++; st[m.away].byDay[wd].A++;}
   });
   // 一週三戰次數：依週統計每隊出賽場數，≥3 即該週計一次
   const byWeek={};
@@ -1752,7 +1801,7 @@ function renderPreview(){
   function pvRow(m){
     const d=parseYMD(m.date);
     const h=team(m.home), a=team(m.away);
-    const tent=matchTentative(m.date,m.time,m.home);
+    const offWl=matchOffWhitelist(m.date,m.time,m.home);
     const venue=h?h.venue:'';
     let homeTag='',awayTag='';
     if(previewTeam!=='all'){
@@ -1771,7 +1820,7 @@ function renderPreview(){
         <span class="pv-side">${awayMark}${teamName(m.away)}${awayTag}</span>
       </span>
       <span class="pv-venue">📍 ${venue}</span>
-      <span class="pv-status">${tent?'<span class="ts">協調中</span>':''}</span>
+      <span class="pv-status">${offWl?'<span class="ts">白名單外</span>':''}</span>
     </div>`;
   }
 
@@ -1961,80 +2010,37 @@ function confirmMatch(){
   if(!modalCtx.home||!modalCtx.away){toast('請選擇主場與客場隊伍',true);return}
   if(modalCtx.home===modalCtx.away){toast('主客場不可同隊',true);return}
   const {date,time}=modalCtx;
-  // 主隊在這天是否為「白名單外」（球團未提供此主場日）
+  // 主隊在這天是否為「白名單外」（球團未回報此主場日）→ 只警示，不阻擋、不動白名單
   if(venueBlocked(modalCtx.home,date,time)){
-    openAvailConfirm();   // 跳補檔期確認 box，選完狀態才真正排入
+    openOffWhitelistWarn();
     return;
   }
   doPlaceMatch();
-}
-// 清掉某隊在某日某時段「協調中」檔期（＝白名單外排賽自動補的那筆）
-// 清除某隊某日「整天協調中」檔期（＝白名單外排賽自動補的）。
-// 改為整天後不再比對時段；但先確認該日該隊沒有「其他」主場比賽還在用這筆檔期，才刪。
-// 回傳刪除筆數。excludeKey：要排除的比賽 key（正在移除/改動的那場，不算「其他」）。
-function cleanupAutoTentative(teamId,date,excludeKey){
-  // 該隊在這天是否還有別的主場比賽（實務上一隊一天最多一場，此為保險）
-  const stillHome=Object.entries(state.matches).some(([k,v])=>
-    k!==excludeKey && v.home===teamId && k.split('|')[0]===date
-  );
-  if(stillHome)return 0;   // 還有別場主場在用這天 → 不刪
-  const before=state.venueAvail.length;
-  state.venueAvail=state.venueAvail.filter(v=>
-    !(v.teamId===teamId && v.date===date && v.status==='tentative')
-  );
-  return before-state.venueAvail.length;
 }
 // 真正把比賽寫入
 function doPlaceMatch(){
-  const {date}=modalCtx;
-  // 編輯換主隊：原格若已有比賽、且主隊不同，舊主隊的協調中檔期一併清掉（避免孤兒檔期）
-  const prev=state.matches[modalCtx.key];
-  let cleaned=0;
-  if(prev && prev.home!==modalCtx.home){
-    // 排除當前這格（即將被新比賽覆蓋），檢查舊主隊該日有無其他主場
-    cleaned=cleanupAutoTentative(prev.home,date,modalCtx.key);
-  }
   state.matches[modalCtx.key]={home:modalCtx.home,away:modalCtx.away};
   closeModal();renderAll();
-  toast(cleaned>0?'已排入，並清除原主隊的協調中檔期':'已排入');
+  toast('已排入');
 }
-// 補檔期確認 box：白名單外排主場時，選確定/協調中，反向補一筆 venueAvail
-function openAvailConfirm(){
+/* 白名單外排主場：純警示。
+   舊版會反向補一筆「協調中」檔期，現已移除——白名單只代表球團回報的可用日，
+   不該被排賽動作偷偷寫入。排入後該場次會持續標示「白名單外」，供後續追蹤。 */
+function openOffWhitelistWarn(){
   const {date,time}=modalCtx;
-  const tname=teamName(modalCtx.home);
-  document.getElementById('acTeam').textContent=tname;
-  document.getElementById('acWhen').textContent=`${fmtDate(date)}（${DOW[parseYMD(date).getDay()]}）${time}`;
-  document.getElementById('availConfirm').classList.add('show');
+  document.getElementById('owTeam').textContent=teamName(modalCtx.home);
+  document.getElementById('owWhen').textContent=`${fmtDate(date)}（${DOW[parseYMD(date).getDay()]}）${time}`;
+  document.getElementById('offWhitelistWarn').classList.add('show');
 }
-function closeAvailConfirm(){document.getElementById('availConfirm').classList.remove('show')}
-// 使用者在 box 選了狀態 → 補檔期 + 排入
-function confirmAvail(status){   // status: 'confirmed' | 'tentative'
-  const {date}=modalCtx;
-  const teamId=modalCtx.home;
-  // 補一筆「整天」可用檔期（time:''＝全天）。
-  // 用整天而非特定時段：球團回報的可用日本就是整天，且比賽日後在同一天內換時段時，
-  // 檔期仍涵蓋（不會脫鉤），判定協調中/連帶刪都以「整天」為準，避免時段對不上的問題。
-  if(!state.venueAvail.some(v=>v.teamId===teamId&&v.date===date&&v.time==='')){
-    state.venueAvail.push({teamId,date,time:'',status});
-  }
-  closeAvailConfirm();
+function closeOffWhitelistWarn(){document.getElementById('offWhitelistWarn').classList.remove('show')}
+function confirmOffWhitelist(){
+  closeOffWhitelistWarn();
   doPlaceMatch();
-  toast(status==='tentative'?'已補協調中檔期並排入':'已補確定檔期並排入');
+  toast('已排入（白名單外，已標記提醒）');
 }
 function removeMatch(){
-  const key=modalCtx.key;
-  const m=state.matches[key];
-  if(m){
-    const date=key.split('|')[0];
-    // 移除比賽時，連帶刪除主隊在該日的整天協調中檔期（白名單外排賽補的）
-    // 排除當前 key：確認該隊該日沒有「其他」主場還在用這筆檔期才刪
-    const removedAvail=cleanupAutoTentative(m.home,date,key);
-    delete state.matches[key];
-    closeModal();renderAll();
-    toast(removedAvail>0?'已移除比賽，並刪除對應的協調中檔期':'已移除');
-    return;
-  }
-  delete state.matches[key];closeModal();renderAll();toast('已移除');
+  delete state.matches[modalCtx.key];
+  closeModal();renderAll();toast('已移除');
 }
 
 /* ---------- 進度總覽 ---------- */
@@ -2087,13 +2093,13 @@ function renderOverview(){
 
   const tbdCount=ms.filter(m=>m.away==='TBD').length;
   const entries=Object.entries(state.matches).map(([k,v])=>{const[date,time]=k.split('|');return{date,time,...v}});
-  const tentList=entries.filter(m=>matchTentative(m.date,m.time,m.home))
+  const tentList=entries.filter(m=>matchOffWhitelist(m.date,m.time,m.home))
     .sort((a,b)=>a.date===b.date?a.time.localeCompare(b.time):a.date.localeCompare(b.date));
   document.getElementById('statGrid').innerHTML=`
     <div class="stat"><div class="label">已排場次</div><div class="val">${ms.length}<small> / ${gamesTotal()}</small></div></div>
     <div class="stat"><div class="label">完成度</div><div class="val">${Math.round(ms.length/gamesTotal()*100)}<small>%</small></div></div>
     <div class="stat"><div class="label">客隊待訂</div><div class="val">${tbdCount}</div></div>
-    <div class="stat"><div class="label">協調中場次</div><div class="val" style="color:${tentList.length?'var(--warn)':'var(--ink)'}">${tentList.length}</div></div>`;
+    <div class="stat"><div class="label">白名單外場次</div><div class="val" style="color:${tentList.length?'var(--warn)':'var(--ink)'}">${tentList.length}</div></div>`;
 
   // 對戰矩陣（home 列 vs away 欄，目標各 3；超過標紅）
   document.getElementById('matrixWrap').innerHTML=buildMatrixHTML();
@@ -2136,20 +2142,20 @@ function renderOverview(){
       </div>`).join('');
   }
 
-  // 協調中比賽清單
+  // 白名單外比賽清單
   const tentWrap=document.getElementById('tentList');
   if(tentWrap){
     document.getElementById('tentCount').textContent=tentList.length?`（${tentList.length} 場）`:'';
     if(tentList.length===0){
-      tentWrap.innerHTML=`<p class="muted" style="padding:8px">目前沒有排在協調中檔期的比賽。</p>`;
+      tentWrap.innerHTML=`<p class="muted" style="padding:8px">目前沒有排在白名單外的比賽。</p>`;
     }else{
       tentWrap.innerHTML=tentList.map(m=>{
         const wk=ymd(mondayOf(parseYMD(m.date)));
         return `<div class="issue tent">
-          <span class="ico">🤝</span>
+          <span class="ico">⚠</span>
           <div class="body">
             <div class="when">${fmtDate(m.date)}（${DOW[parseYMD(m.date).getDay()]}）${m.time}</div>
-            <div class="what">${teamName(m.home)}（主）vs ${teamName(m.away)}　—　主場檔期協調中</div>
+            <div class="what">${teamName(m.home)}（主）vs ${teamName(m.away)}　—　這天不在 ${teamName(m.home)} 的白名單內</div>
           </div>
           <button class="jump" onclick="jumpTo('${wk}')">前往 →</button>
         </div>`;
@@ -2158,22 +2164,202 @@ function renderOverview(){
   }
 }
 
-/* ---------- 公平性檢視表（各出賽日 三/五/六/日 主客分配）---------- */
+/* ===================================================================
+   主場檔期日曆：依白名單，逐月列出每天可排主場的隊伍
+   - 月份範圍：賽季起訖所在月份「整月」顯示（10/17～5/16 → 完整 10 月到 5 月）
+   - 每格列出當天有回報可用檔期的隊；已排定主場者加 ✓
+   - 未上傳檔期的隊伍不受白名單限制，預設不列（可勾選一併顯示）
+   =================================================================== */
+// 賽季起訖所在月份的整月清單 [{y,m}]（m 為 0-based）
+function seasonMonths(){
+  const st=state.season.start, en=state.season.end;
+  if(!st||!en)return [];
+  const a=parseYMD(st), b=parseYMD(en);
+  const out=[];
+  let cur=new Date(a.getFullYear(),a.getMonth(),1);
+  const last=new Date(b.getFullYear(),b.getMonth(),1);
+  let guard=0;
+  while(cur<=last && guard++<240){
+    out.push({y:cur.getFullYear(),m:cur.getMonth()});
+    cur=new Date(cur.getFullYear(),cur.getMonth()+1,1);
+  }
+  return out;
+}
+// 某日可排主場的隊伍：{avail:[team], free:[team]}
+//   avail＝有上傳白名單且該日命中；free＝完全沒上傳檔期（不受限制）
+function homeAvailOn(dateStr){
+  const avail=[],free=[];
+  state.teams.forEach(t=>{
+    if(!teamHasAvail(t.id)){free.push(t);return}
+    if(state.venueAvail.some(v=>v.teamId===t.id&&v.date===dateStr))avail.push(t);
+  });
+  return {avail,free};
+}
+// 某隊該日是否已排定主場
+function hasHomeMatchOn(teamId,dateStr){
+  return Object.entries(state.matches).some(([k,v])=>v.home===teamId&&k.split('|')[0]===dateStr);
+}
+function renderHomeCal(){
+  const wrap=document.getElementById('homeCalWrap');
+  if(!wrap)return;
+  // 隊伍下拉（保留選取）
+  const sel=document.getElementById('hcTeam');
+  if(sel){
+    const prev=sel.value;
+    sel.innerHTML=`<option value="all">全部隊伍</option>`+
+      state.teams.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+    if(prev&&(prev==='all'||state.teams.some(t=>t.id===prev)))sel.value=prev;
+  }
+  const only=document.getElementById('hcOnlyAvail')?.checked;
+  const showFree=document.getElementById('hcShowFree')?.checked;
+  const pick=sel?sel.value:'all';
+  const months=seasonMonths();
+  if(months.length===0){
+    wrap.innerHTML='<p class="muted" style="padding:10px 2px">請先到「隊伍與賽季」設定賽季起訖日期。</p>';
+    return;
+  }
+  const st=state.season.start, en=state.season.end;
+  const DOWH=['一','二','三','四','五','六','日'];
+  let html='',totalDays=0;
+  months.forEach(({y,m})=>{
+    const daysInMonth=new Date(y,m+1,0).getDate();
+    const startDow=(new Date(y,m,1).getDay()+6)%7;      // 週一為 0
+    let cells='',monthDays=0;
+    for(let i=0;i<startDow;i++)cells+='<div class="hc-cell hc-pad"></div>';
+    for(let d=1;d<=daysInMonth;d++){
+      const ds=`${y}-${pad(m+1)}-${pad(d)}`;
+      const wd=parseYMD(ds).getDay();
+      const inSeason=(!st||ds>=st)&&(!en||ds<=en);
+      const bo=leagueBlackoutReason(ds);
+      let {avail,free}=homeAvailOn(ds);
+      if(pick!=='all'){
+        avail=avail.filter(t=>t.id===pick);
+        free=free.filter(t=>t.id===pick);
+      }
+      const shown=showFree?avail.concat(free):avail;
+      if(inSeason&&avail.length)monthDays++;
+      let cls='hc-cell';
+      if(!inSeason)cls+=' hc-off';
+      else if(bo)cls+=' hc-bo';
+      else if(wd===0||wd===6)cls+=' hc-we';
+      if(only&&inSeason&&shown.length===0)cls+=' hc-dim';
+      let body='';
+      if(!inSeason)body='';
+      else if(bo)body=`<div class="hc-bomsg">🚫 ${bo}</div>`;
+      else if(shown.length===0)body='<span class="hc-none">—</span>';
+      else body=`<div class="hc-chips">`+shown.map(t=>{
+        const isFree=!teamHasAvail(t.id);
+        const done=hasHomeMatchOn(t.id,ds);
+        if(isFree)return `<span class="hc-chip hc-free" title="${t.name}：未上傳檔期，主場不受限制">${t.name}</span>`;
+        return `<span class="hc-chip" style="background:${t.color};color:${isDarkColor(t.color)?'#fff':'#000'}"
+          title="${t.name} 可排主場${done?'（已排定）':''}">${t.name}${done?'<span class="hc-tick">✓</span>':''}</span>`;
+      }).join('')+`</div>`;
+      cells+=`<div class="${cls}"><div class="hc-dnum">${d}</div>${body}</div>`;
+    }
+    totalDays+=monthDays;
+    html+=`<div class="hc-month">
+      <h4 class="hc-mtitle">${y} 年 ${m+1} 月 <span class="hc-mcount">${monthDays} 天有可用檔期</span></h4>
+      <div class="hc-grid">${DOWH.map((x,i)=>`<div class="hc-dow${i>=5?' we':''}">${x}</div>`).join('')}${cells}</div>
+    </div>`;
+  });
+  html+=`<div class="hc-legend">
+    <span><span class="hk" style="background:#fdecec;border:1px solid #f1b9b6"></span>全聯盟禁排</span>
+    <span><span class="hk" style="background:#fbfdff;border:1px solid var(--line)"></span>週末</span>
+    <span><span class="hk" style="background:var(--lock-bg);border:1px dashed var(--line)"></span>賽季外</span>
+    <span>✓＝該隊當天已排定主場</span>
+    <span class="muted">虛線框＝未上傳檔期的隊伍（主場不受限制）</span>
+  </div>`;
+  wrap.innerHTML=html;
+  const sm=document.getElementById('hcSummary');
+  if(sm)sm.textContent=`${months.length} 個月　共 ${totalDays} 天有可用檔期　白名單 ${state.venueAvail.length} 筆`;
+}
+
+/* ---------- 公平性檢視表（出賽日主客分配；顯示哪幾天可勾選）----------
+   顯示邏輯（三層，由弱到強）：
+     1. state.analysisDays 為 null（預設）＝「自動」：依賽程中實際有排賽的星期決定欄位，
+        未來加禮拜四賽事會自動長出欄位，不必回來改程式或記得勾選。
+     2. 完全沒排賽時，退回 TPBL 目前慣例的三/五/六/日，讓空表也有骨架可看。
+     3. state.analysisDays 為陣列＝使用者手動指定，覆蓋前兩者。
+   另外一律計算「未列入欄位的比賽數」並提示，避免某天被漏掉時，
+   表面上每一列都看得懂、實際上加總對不起來。 */
+const WEEK_ORDER=[1,2,3,4,5,6,0];                 // 顯示順序：一 二 三 四 五 六 日
+const FALLBACK_DAYS=[3,5,6,0];                    // 完全沒排賽時的預設骨架
+function isWeekendDay(wd){return wd===0||wd===6}
+// 賽程中實際出現過的星期
+function scheduledDays(){
+  const s=new Set();
+  Object.keys(state.matches).forEach(k=>s.add(parseYMD(k.split('|')[0]).getDay()));
+  return WEEK_ORDER.filter(d=>s.has(d));
+}
+// 目前要顯示的出賽日
+function analysisDays(){
+  if(Array.isArray(state.analysisDays)){
+    return WEEK_ORDER.filter(d=>state.analysisDays.includes(d));
+  }
+  const auto=scheduledDays();
+  return auto.length?auto:FALLBACK_DAYS.slice();
+}
+function isAutoDays(){return !Array.isArray(state.analysisDays)}
+// 勾選／取消單一星期（第一次手動勾選時，先把目前自動結果固化下來再改）
+function toggleAnalysisDay(wd,on){
+  const cur=analysisDays();
+  const next=on?[...new Set([...cur,wd])]:cur.filter(d=>d!==wd);
+  state.analysisDays=WEEK_ORDER.filter(d=>next.includes(d));
+  autoSave();
+  renderFairness();
+}
+function resetAnalysisDays(){
+  state.analysisDays=null;      // 回到「自動」
+  autoSave();
+  renderFairness();
+}
 function renderFairness(){
   const wrap=document.getElementById('fairnessWrap');
   if(!wrap)return;
   const stats=teamStats();
-  // 各欄位收集數值，找出最大/最小以標色（落差>=2 才標，避免小差異也亮）
-  const cols=['d3H','d3A','d5H','d5A','d6H','d6A','d0H','d0A','threeIn'];
+  const days=analysisDays();
+  const auto=isAutoDays();
+
+  // --- 出賽日勾選列 ---
+  const sched=scheduledDays();
+  let bar=`<div class="fair-daybar">
+    <span class="fdb-label">顯示出賽日</span>`;
+  WEEK_ORDER.forEach(d=>{
+    const on=days.includes(d);
+    const has=sched.includes(d);
+    bar+=`<label class="fday${on?' on':''}${has?'':' empty'}" title="${has?'賽程中有此日的比賽':'賽程中目前沒有此日的比賽'}">
+      <input type="checkbox" ${on?'checked':''} onchange="toggleAnalysisDay(${d},this.checked)">
+      <span>週${DOW[d]}</span>${has?'':'<span class="fday-0">0</span>'}
+    </label>`;
+  });
+  bar+=`<span class="spacer" style="flex:1"></span>
+    <span class="tiny ${auto?'fdb-auto':'fdb-manual'}">${auto?'自動：依實際排賽日':'手動指定'}</span>
+    ${auto?'':'<button class="btn sm" onclick="resetAnalysisDays()">回到自動</button>'}
+  </div>`;
+
+  if(days.length===0){
+    wrap.innerHTML=bar+'<p class="muted" style="padding:10px 2px">請至少勾選一個出賽日。</p>';
+    return;
+  }
+
+  // --- 欄位定義：每個出賽日兩欄（主/客），末欄一週三戰 ---
+  const cols=[];
+  days.forEach(d=>{cols.push(`${d}H`);cols.push(`${d}A`)});
+  cols.push('threeIn');
+  const valOf=(tid,c)=>{
+    if(c==='threeIn')return stats[tid].threeIn;
+    const d=Number(c.slice(0,-1)),side=c.slice(-1);
+    return stats[tid].byDay[d][side];
+  };
   const colMax={},colMin={};
   cols.forEach(c=>{
-    const vals=state.teams.map(t=>stats[t.id][c]);
+    const vals=state.teams.map(t=>valOf(t.id,c));
     colMax[c]=Math.max(...vals);colMin[c]=Math.min(...vals);
   });
-  // 是否有任何已排比賽（全 0 時不標色）
   const anyMatch=Object.keys(state.matches).length>0;
 
-  function cell(c,v,wend){
+  function cell(tid,c,wend){
+    const v=valOf(tid,c);
     let cls=wend?' fnum-wend':'';
     if(anyMatch && colMax[c]-colMin[c]>=2){
       if(v===colMax[c])cls+=' fair-hi';        // 該欄最多
@@ -2181,41 +2367,50 @@ function renderFairness(){
     }
     return `<td class="fnum${cls}">${v}</td>`;
   }
+
   let html=`<table class="tbl fair-tbl">
     <tr>
-      <th rowspan="2" class="fcol-team">隊伍</th>
-      <th colspan="2" class="grp">週三</th>
-      <th colspan="2" class="grp">週五</th>
-      <th colspan="2" class="grp grp-wend">週六</th>
-      <th colspan="2" class="grp grp-wend">週日</th>
-      <th rowspan="2" class="fcol-3in">一週三戰次數</th>
-    </tr>
-    <tr>
-      <th>主</th><th>客</th>
-      <th>主</th><th>客</th>
-      <th class="grp-wend">主</th><th class="grp-wend">客</th>
-      <th class="grp-wend">主</th><th class="grp-wend">客</th>
-    </tr>`;
+      <th rowspan="2" class="fcol-team">隊伍</th>`;
+  days.forEach(d=>{
+    const w=isWeekendDay(d);
+    html+=`<th colspan="2" class="grp${w?' grp-wend':''}">週${DOW[d]}</th>`;
+  });
+  html+=`<th rowspan="2" class="fcol-3in">一週三戰次數</th></tr><tr>`;
+  days.forEach(d=>{
+    const w=isWeekendDay(d)?' class="grp-wend"':'';
+    html+=`<th${w}>主</th><th${w}>客</th>`;
+  });
+  html+=`</tr>`;
   state.teams.forEach(t=>{
-    const s=stats[t.id];
     html+=`<tr>
-      <td><span style="display:inline-flex;align-items:center;gap:6px">${teamMark(t,16,'mlogo')}${t.name}</span></td>
-      ${cell('d3H',s.d3H)}${cell('d3A',s.d3A)}
-      ${cell('d5H',s.d5H)}${cell('d5A',s.d5A)}
-      ${cell('d6H',s.d6H,true)}${cell('d6A',s.d6A,true)}
-      ${cell('d0H',s.d0H,true)}${cell('d0A',s.d0A,true)}
-      ${cell('threeIn',s.threeIn)}
-    </tr>`;
+      <td><span style="display:inline-flex;align-items:center;gap:6px">${teamMark(t,16,'mlogo')}${t.name}</span></td>`;
+    days.forEach(d=>{
+      const w=isWeekendDay(d);
+      html+=cell(t.id,`${d}H`,w)+cell(t.id,`${d}A`,w);
+    });
+    html+=cell(t.id,'threeIn')+`</tr>`;
   });
   html+=`</table>`;
-  // 圖例
-  html+=`<div class="fair-legend">
-    <span>主＝主場　客＝客場（週六、日為假日）</span>
+
+  // --- 未列入提醒：有比賽落在沒顯示的星期，總數就會對不起來 ---
+  const missing=Object.keys(state.matches)
+    .map(k=>parseYMD(k.split('|')[0]).getDay())
+    .filter(d=>!days.includes(d));
+  let warn='';
+  if(missing.length){
+    const dl=WEEK_ORDER.filter(d=>missing.includes(d)).map(d=>`週${DOW[d]}`).join('、');
+    warn=`<div class="fair-warn">⚠ 有 <b>${missing.length}</b> 場比賽排在 <b>${dl}</b>，未列入上表，
+      各隊主客場數加總會少於實際場次。要納入請在上方勾選該日。</div>`;
+  }
+
+  const wendNames=days.filter(isWeekendDay).map(d=>`週${DOW[d]}`).join('、');
+  html+=warn+`<div class="fair-legend">
+    <span>主＝主場　客＝客場${wendNames?`（${wendNames}為假日）`:''}</span>
     <span><span class="fk fk-hi"></span> 該欄最多</span>
     <span><span class="fk fk-lo"></span> 該欄最少</span>
     <span class="muted">（同欄最多與最少相差 ≥2 才標示）</span>
   </div>`;
-  wrap.innerHTML=html;
+  wrap.innerHTML=bar+html;
 }
 /* ---------- 季中群聚分析 ---------- */
 // 賽季行事曆中點（上下半季日期切分的預設值）
@@ -2484,16 +2679,14 @@ function renderBlackout(){
   }
   renderVenueCal();
 
-  let vb=`<tr><th>隊伍</th><th>可用日期</th><th>時段</th><th>狀態</th><th></th></tr>`;
+  let vb=`<tr><th>隊伍</th><th>可用日期</th><th>時段</th><th></th></tr>`;
   let pool=state.venueAvail.map((v,idx)=>({...v,_idx:idx}));
   if(venueFilter!=='all')pool=pool.filter(v=>v.teamId===venueFilter);
-  if(pool.length===0)vb+=`<tr><td colspan="5" class="muted">尚無${venueFilter==='all'?'（未提供檔期的隊伍，主場不受限制）':'此隊檔期'}</td></tr>`;
+  if(pool.length===0)vb+=`<tr><td colspan="4" class="muted">尚無${venueFilter==='all'?'（未提供檔期的隊伍，主場不受限制）':'此隊檔期'}</td></tr>`;
   pool.sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||''));
   pool.forEach(v=>{
-    const tent=v.status==='tentative';
     vb+=`<tr><td><span style="color:${team(v.teamId)?.color}">●</span> ${teamName(v.teamId)}</td>
       <td>${fmtDate(v.date)}（${DOW[parseYMD(v.date).getDay()]}）</td><td>${v.time||'全天'}</td>
-      <td><button class="status-pill ${tent?'tent':'ok'}" onclick="toggleVenueStatus(${v._idx})">${tent?'🤝 協調中':'✓ 確定'}</button></td>
       <td><button class="btn ghost sm" onclick="delVenue(${v._idx})">刪除</button></td></tr>`;
   });
   document.getElementById('venueTbl').innerHTML=vb;
@@ -2524,11 +2717,6 @@ function setTeamBlackoutScope(id,scope){
   if(b){b.scope=scope;renderBlackout();renderAll();toast('已更新禁排類別：'+tbScopeLabel(scope))}
 }
 function delVenue(i){state.venueAvail.splice(i,1);renderBlackout();renderAll()}
-function toggleVenueStatus(i){
-  const v=state.venueAvail[i];
-  v.status=v.status==='tentative'?'confirmed':'tentative';
-  renderBlackout();renderAll();
-}
 function setVenueFilter(v){venueFilter=v;renderBlackout()}
 
 /* ===================================================================
@@ -2610,11 +2798,10 @@ function venueCalApply(){
   if(!teamId){toast('請選擇隊伍',true);return}
   if(vcalSel.size===0){toast('請先在月曆點選日期',true);return}
   const timeSel=document.getElementById('vmTime').value;   // '' = 全天
-  const status=document.getElementById('vmStatus').value;  // confirmed / tentative
   let added=0,dup=0;
   [...vcalSel].sort().forEach(date=>{
     if(state.venueAvail.some(v=>v.teamId===teamId&&v.date===date&&v.time===timeSel)){dup++;return}
-    state.venueAvail.push({teamId,date,time:timeSel,status});added++;
+    state.venueAvail.push({teamId,date,time:timeSel});added++;
   });
   vcalSel.clear();
   venueFilter=teamId;  // 加完自動篩到該隊方便檢視
@@ -2655,12 +2842,9 @@ function onVenueFile(e){
           const dateStr=parseAnyDate(dv);
           if(!dateStr){skipped++;continue}
           const time=normTime(timeCol>=0?row[timeCol]:'');
-          // 備註含「協調」「暫定」「tentative」→ 標為協調中
-          const note=noteCol>=0?String(row[noteCol]||''):'';
-          const status=/協調|暫定|待確認|tentative/i.test(note)?'tentative':'confirmed';
           // 去重
           if(!state.venueAvail.some(v=>v.teamId===t.id&&v.date===dateStr&&v.time===time)){
-            state.venueAvail.push({teamId:t.id,date:dateStr,time,status});added++;
+            state.venueAvail.push({teamId:t.id,date:dateStr,time});added++;
           }
         }
       });
@@ -2723,10 +2907,10 @@ function downloadVenueTemplate(){
       [`${t.name} — 主場可用日期回報`],
       ['請填寫貴隊主場「可以使用」的日期。時段填 14:30 / 17:00 / 19:00；該日全天皆可請填「全天」。'],
       ['※ 僅填寫的日期會被視為可排主場；未列出的日期將不安排貴隊主場。'],
-      ['※ 若該日仍在協調、尚未確定，請在備註欄填「協調中」。'],
+      ['※ 備註欄可自由填寫（例如場地名稱、需注意事項），不影響匯入結果。'],
       ['日期','時段','備註'],
       ['2026/10/10','全天','（範例，可刪除）'],
-      ['2026/11/07','19:00','協調中（範例，可刪除）'],
+      ['2026/11/07','19:00','（備註欄，可留空）'],
     ];
     const ws=XLSX.utils.aoa_to_sheet(aoa);
     ws['!cols']=[{wch:16},{wch:12},{wch:28}];
@@ -2804,74 +2988,97 @@ async function exportExcel(){
   const all=sortedMatches();
   const wkMap=weekNoMap();   // 定義 B：只有排了比賽的週才編號、接續
 
-  const COLW=[6,6,13,6,8,13,13,10];
-  const HEAD=['場次','週次','日期','星期','時間','主場','客場','狀態'];
-  const NCOL=HEAD.length;
-  const thin={style:'thin',color:{argb:'FF000000'}};         // 黑色細框線
-  const bd={top:thin,left:thin,bottom:thin,right:thin};      // 四邊黑格線
-  const mid={horizontal:'center',vertical:'middle'};         // 所有儲存格置中
+  /* 版面規格（對齊 V4 版樣張）：
+       - 字型一律 微軟正黑體；標題 14 粗、其餘 11
+       - 標題列與表頭列：藍底 #0070C0 + 白粗字
+       - 全表黑色細框線、水平垂直置中
+       - 已移除「狀態」欄（確定/協調中），共 7 欄 */
+  const COLW=[6,6,13,6,8,13,13];
+  const HEAD=['場次','週次','日期','星期','時間','主場','客場'];
+  const NCOL=HEAD.length;                                    // 7
+  const GAP=1;                                               // 併排區塊之間空的欄數
+  const FONT='微軟正黑體';
+  const BLUE='FF0070C0';                                     // 標題／表頭底色
+  const thin={style:'thin',color:{argb:'FF000000'}};
+  const bd={top:thin,left:thin,bottom:thin,right:thin};
+  const mid={horizontal:'center',vertical:'middle'};
 
   // 填隊色：儲存格底色＝該隊主色，字色依亮度自動配白/黑
   const paint=(cell,teamId)=>{
-    if(teamId==='TBD')return;                      // 待訂不上色
+    if(teamId==='TBD')return;                                // 待訂不上色
     const t=team(teamId); if(!t||!t.color)return;
     cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:hexToARGB(t.color)}};
-    cell.font={color:{argb:isDarkColor(t.color)?'FFFFFFFF':'FF000000'},bold:true};
-  };
-  // 跨欄置中的標題列（工作表大標／區塊小標）
-  const titleRow=(ws,text,size)=>{
-    const r=ws.addRow([text]);
-    ws.mergeCells(r.number,1,r.number,NCOL);
-    r.getCell(1).font={bold:true,size:size};
-    r.getCell(1).alignment=mid;
-    return r;
+    cell.font={name:FONT,size:11,bold:true,
+      color:{argb:isDarkColor(t.color)?'FFFFFFFF':'FF000000'}};
   };
   const rowArr=(m)=>{
     const d=parseYMD(m.date);
-    const status=matchTentative(m.date,m.time,m.home)?'協調中':'確定';
     const wno=wkMap[ymd(mondayOf(d))]||'';
-    return [m.gameNo, wno, fmtDate(m.date), DOW[d.getDay()], m.time, teamName(m.home), teamName(m.away), status];
+    return [m.gameNo, wno, fmtDate(m.date), DOW[d.getDay()], m.time, teamName(m.home), teamName(m.away)];
   };
-  // 在工作表寫一個區塊：可選小標題 + 表頭 + 資料列（含格線與主客場上色）
-  const writeBlock=(ws,title,rows)=>{
-    if(title)titleRow(ws,title,12);
-    const hd=ws.addRow(HEAD);
-    hd.eachCell(c=>{
-      c.font={bold:true};c.border=bd;
-      c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFEDF0F4'}};
-      c.alignment=mid;
+
+  /* 在工作表指定欄位起點寫一個區塊（標題列 + 表頭列 + 資料列）。
+     col0＝該區塊最左欄（1-based）。回傳寫完後的下一列。
+     用絕對列/欄定位而非 addRow，才能把多個區塊「並排」在同一張表上。 */
+  const writeBlock=(ws,col0,title,rows)=>{
+    // 標題列（跨 7 欄合併、藍底白字 14）
+    ws.mergeCells(1,col0,1,col0+NCOL-1);
+    const tc=ws.getCell(1,col0);
+    tc.value=title;
+    tc.font={name:FONT,size:14,bold:true,color:{argb:'FFFFFFFF'}};
+    tc.fill={type:'pattern',pattern:'solid',fgColor:{argb:BLUE}};
+    tc.alignment=mid;
+    // 表頭列
+    HEAD.forEach((h,i)=>{
+      const c=ws.getCell(2,col0+i);
+      c.value=h;
+      c.font={name:FONT,size:11,bold:true,color:{argb:'FFFFFFFF'}};
+      c.fill={type:'pattern',pattern:'solid',fgColor:{argb:BLUE}};
+      c.alignment=mid;c.border=bd;
     });
-    rows.forEach(m=>{
-      const r=ws.addRow(rowArr(m));
-      // 每格：黑框線 + 水平垂直置中
-      for(let i=1;i<=NCOL;i++){const c=r.getCell(i);c.border=bd;c.alignment=mid;}
-      paint(r.getCell(6),m.home);        // 主場欄上色
-      paint(r.getCell(7),m.away);        // 客場欄上色
+    // 資料列
+    rows.forEach((m,ri)=>{
+      const vals=rowArr(m);
+      vals.forEach((v,i)=>{
+        const c=ws.getCell(3+ri,col0+i);
+        c.value=v;
+        c.font={name:FONT,size:11};
+        c.alignment=mid;c.border=bd;
+      });
+      paint(ws.getCell(3+ri,col0+5),m.home);   // 主場欄
+      paint(ws.getCell(3+ri,col0+6),m.away);   // 客場欄
     });
-    ws.addRow([]);                       // 區塊之間空一列
   };
-  const setCols=(ws)=>{ws.columns=COLW.map(w=>({width:w}));};
+  // 依區塊數設定欄寬（區塊之間留 GAP 欄）
+  const setCols=(ws,nBlocks)=>{
+    const widths=[];
+    for(let b=0;b<nBlocks;b++){
+      widths.push(...COLW);
+      if(b<nBlocks-1)for(let g=0;g<GAP;g++)widths.push(3);
+    }
+    ws.columns=widths.map(w=>({width:w}));
+    ws.getRow(1).height=21;
+  };
 
   // === 分頁 1：總賽程（全部場次）===
   const TITLE=schedTitle();            // 頂欄「賽程表名」輸入框
-  const ws0=wb.addWorksheet(`總賽程_${state.teams.length}隊`,{views:[{state:'frozen',ySplit:3}]});
-  setCols(ws0);
-  titleRow(ws0,TITLE,14);
-  ws0.addRow([]);
-  writeBlock(ws0,'',all);
+  const PREFIX=seasonPrefix();         // 由表名推導的賽季前綴（隊伍分頁區塊標題用）
+  const ws0=wb.addWorksheet('總賽程',{views:[{state:'frozen',ySplit:2}]});
+  setCols(ws0,1);
+  writeBlock(ws0,1,TITLE,all);
 
-  // === 分頁 2–8：每隊一頁（完整總表 + 該隊主場 + 該隊全部賽事）===
-  // 每頁自成一體，可整頁交給該球團；三塊皆依場次排序，共用同一套格線與隊色
+  // === 分頁 2–8：每隊一頁，三個區塊「並排」===
+  //  A–G＝完整總賽程／I–O＝該隊主場／Q–W＝該隊全部賽事
+  //  三塊同一列起算，方便橫向對照；整頁可直接交給該球團。
   state.teams.forEach(t=>{
-    const homeRows=all.filter(m=>m.home===t.id);                     // 主場 18
-    const allRows =all.filter(m=>m.home===t.id||m.away===t.id);      // 全部 36
+    const homeRows=all.filter(m=>m.home===t.id);
+    const allRows =all.filter(m=>m.home===t.id||m.away===t.id);
     const ws=wb.addWorksheet(t.name.slice(0,28),{properties:{tabColor:{argb:hexToARGB(t.color)}}});
-    setCols(ws);
-    titleRow(ws,`${TITLE}　—　${t.name} 賽程分頁`,14);
-    ws.addRow([]);
-    writeBlock(ws,`① 完整總賽程（全 ${all.length} 場）`,all);
-    writeBlock(ws,`② ${t.name} 主場（${homeRows.length} 場）`,homeRows);
-    writeBlock(ws,`③ ${t.name} 全部賽事（${allRows.length} 場）`,allRows);
+    setCols(ws,3);
+    const step=NCOL+GAP;                                   // 每塊往右位移 8 欄
+    writeBlock(ws,1,        TITLE,                                                   all);
+    writeBlock(ws,1+step,   `${PREFIX} ${t.name} 主場賽事（${homeRows.length} 場）`,   homeRows);
+    writeBlock(ws,1+step*2, `${PREFIX} ${t.name} 全部賽事（${allRows.length} 場）`,    allRows);
   });
 
   const buf=await wb.xlsx.writeBuffer();
