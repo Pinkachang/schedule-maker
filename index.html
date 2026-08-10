@@ -386,6 +386,23 @@ select.scope-sel{padding:4px 6px;font-size:12px;min-width:96px;width:auto}
 .vcal-cell.vc-has.vc-sel{box-shadow:none}
 .vcal-cell .vdot{position:absolute;bottom:3px;width:4px;height:4px;border-radius:50%;background:var(--ok)}
 .vcal-cell.vc-sel .vdot{background:#fff}
+/* ---------- 列印 / 存成 PDF（只印主場檔期日曆）---------- */
+@media print{
+  @page{size:A4 landscape;margin:10mm}
+  /* 強制保留底色，否則瀏覽器列印會把色塊全部濾掉，日曆就失去意義 */
+  *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}
+  body{background:#fff}
+  .topbar,.tabs,.matrix-fab,.toast,.overlay{display:none !important}
+  .view{display:none !important}
+  .view#view-homecal{display:block !important}
+  #view-homecal .section-head p,#view-homecal .hint,.hc-toolbar{display:none !important}
+  #view-homecal .card{border:none;box-shadow:none;padding:0;margin:0}
+  .hc-month{break-inside:avoid;page-break-inside:avoid;margin-bottom:14px}
+  .hc-cell{min-height:66px}
+  .hc-cell.hc-dim{opacity:1}          /* 列印時不要淡出，避免看起來像印壞 */
+  .hc-legend{break-inside:avoid}
+}
+
 /* ---------- 主場檔期日曆 ---------- */
 .hc-toolbar{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:16px}
 .hc-chk{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-soft);cursor:pointer;user-select:none;padding-bottom:6px}
@@ -747,6 +764,8 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
         <label class="hc-chk"><input type="checkbox" id="hcShowFree" onchange="renderHomeCal()"> 一併列出未上傳檔期的隊伍</label>
         <span style="flex:1"></span>
         <span class="tiny muted" id="hcSummary"></span>
+        <button class="btn sm" onclick="exportHomeCalExcel()">📊 匯出 Excel</button>
+        <button class="btn sm" onclick="printHomeCal()">🖨 列印 / 存成 PDF</button>
       </div>
       <div id="homeCalWrap"></div>
     </div>
@@ -2199,6 +2218,31 @@ function homeAvailOn(dateStr){
 function hasHomeMatchOn(teamId,dateStr){
   return Object.entries(state.matches).some(([k,v])=>v.home===teamId&&k.split('|')[0]===dateStr);
 }
+// 目前畫面上的篩選條件（畫面與匯出共用，確保匯出＝所見）
+function homeCalOpts(){
+  return {
+    pick: document.getElementById('hcTeam')?.value||'all',
+    only: !!document.getElementById('hcOnlyAvail')?.checked,
+    showFree: !!document.getElementById('hcShowFree')?.checked,
+  };
+}
+/* 單日結果（畫面與匯出共用的唯一真實來源）
+   回傳 {inSeason, bo, shown:[{team,free,done}]} */
+function homeCalDay(ds,opts){
+  const st=state.season.start, en=state.season.end;
+  const inSeason=(!st||ds>=st)&&(!en||ds<=en);
+  const bo=leagueBlackoutReason(ds);
+  let {avail,free}=homeAvailOn(ds);
+  if(opts.pick!=='all'){
+    avail=avail.filter(t=>t.id===opts.pick);
+    free=free.filter(t=>t.id===opts.pick);
+  }
+  const shown=[
+    ...avail.map(t=>({team:t,free:false,done:hasHomeMatchOn(t.id,ds)})),
+    ...(opts.showFree?free.map(t=>({team:t,free:true,done:hasHomeMatchOn(t.id,ds)})):[])
+  ];
+  return {inSeason,bo,shown,availCount:avail.length};
+}
 function renderHomeCal(){
   const wrap=document.getElementById('homeCalWrap');
   if(!wrap)return;
@@ -2210,15 +2254,12 @@ function renderHomeCal(){
       state.teams.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
     if(prev&&(prev==='all'||state.teams.some(t=>t.id===prev)))sel.value=prev;
   }
-  const only=document.getElementById('hcOnlyAvail')?.checked;
-  const showFree=document.getElementById('hcShowFree')?.checked;
-  const pick=sel?sel.value:'all';
+  const opts=homeCalOpts();
   const months=seasonMonths();
   if(months.length===0){
     wrap.innerHTML='<p class="muted" style="padding:10px 2px">請先到「隊伍與賽季」設定賽季起訖日期。</p>';
     return;
   }
-  const st=state.season.start, en=state.season.end;
   const DOWH=['一','二','三','四','五','六','日'];
   let html='',totalDays=0;
   months.forEach(({y,m})=>{
@@ -2229,30 +2270,22 @@ function renderHomeCal(){
     for(let d=1;d<=daysInMonth;d++){
       const ds=`${y}-${pad(m+1)}-${pad(d)}`;
       const wd=parseYMD(ds).getDay();
-      const inSeason=(!st||ds>=st)&&(!en||ds<=en);
-      const bo=leagueBlackoutReason(ds);
-      let {avail,free}=homeAvailOn(ds);
-      if(pick!=='all'){
-        avail=avail.filter(t=>t.id===pick);
-        free=free.filter(t=>t.id===pick);
-      }
-      const shown=showFree?avail.concat(free):avail;
-      if(inSeason&&avail.length)monthDays++;
+      const {inSeason,bo,shown,availCount}=homeCalDay(ds,opts);
+      if(inSeason&&availCount)monthDays++;
       let cls='hc-cell';
       if(!inSeason)cls+=' hc-off';
       else if(bo)cls+=' hc-bo';
       else if(wd===0||wd===6)cls+=' hc-we';
-      if(only&&inSeason&&shown.length===0)cls+=' hc-dim';
+      if(opts.only&&inSeason&&shown.length===0)cls+=' hc-dim';
       let body='';
       if(!inSeason)body='';
       else if(bo)body=`<div class="hc-bomsg">🚫 ${bo}</div>`;
       else if(shown.length===0)body='<span class="hc-none">—</span>';
-      else body=`<div class="hc-chips">`+shown.map(t=>{
-        const isFree=!teamHasAvail(t.id);
-        const done=hasHomeMatchOn(t.id,ds);
-        if(isFree)return `<span class="hc-chip hc-free" title="${t.name}：未上傳檔期，主場不受限制">${t.name}</span>`;
+      else body=`<div class="hc-chips">`+shown.map(x=>{
+        const t=x.team;
+        if(x.free)return `<span class="hc-chip hc-free" title="${t.name}：未上傳檔期，主場不受限制">${t.name}</span>`;
         return `<span class="hc-chip" style="background:${t.color};color:${isDarkColor(t.color)?'#fff':'#000'}"
-          title="${t.name} 可排主場${done?'（已排定）':''}">${t.name}${done?'<span class="hc-tick">✓</span>':''}</span>`;
+          title="${t.name} 可排主場${x.done?'（已排定）':''}">${t.name}${x.done?'<span class="hc-tick">✓</span>':''}</span>`;
       }).join('')+`</div>`;
       cells+=`<div class="${cls}"><div class="hc-dnum">${d}</div>${body}</div>`;
     }
@@ -2272,6 +2305,143 @@ function renderHomeCal(){
   wrap.innerHTML=html;
   const sm=document.getElementById('hcSummary');
   if(sm)sm.textContent=`${months.length} 個月　共 ${totalDays} 天有可用檔期　白名單 ${state.venueAvail.length} 筆`;
+}
+
+/* ---------- 主場檔期日曆：匯出 Excel ----------
+   版面與總賽程一致（微軟正黑體、藍底白字標題、黑細框線、置中）。
+   每個月一塊：月標題 → 星期表頭 → 每週「日期列 + 每隊一列」。
+   一隊佔一格才能填該隊主色；同一週的隊伍列數取該週最多者。
+   匯出內容＝畫面上的篩選結果（隊伍、只顯示有檔期、含未上傳隊伍）。 */
+async function exportHomeCalExcel(){
+  const months=seasonMonths();
+  if(months.length===0){toast('請先設定賽季起訖日期',true);return}
+  const opts=homeCalOpts();
+  const wb=new ExcelJS.Workbook();
+  const ws=wb.addWorksheet('主場檔期日曆');
+  const FONT='微軟正黑體', BLUE='FF0070C0';
+  const thin={style:'thin',color:{argb:'FF000000'}};
+  const bd={top:thin,left:thin,bottom:thin,right:thin};
+  const mid={horizontal:'center',vertical:'middle'};
+  const NC=7;
+  ws.columns=Array.from({length:NC},()=>({width:13}));
+
+  const bandRow=(r,text,size)=>{                       // 跨 7 欄的藍底白字標題
+    ws.mergeCells(r,1,r,NC);
+    const c=ws.getCell(r,1);
+    c.value=text;
+    c.font={name:FONT,size,bold:true,color:{argb:'FFFFFFFF'}};
+    c.fill={type:'pattern',pattern:'solid',fgColor:{argb:BLUE}};
+    c.alignment=mid;
+    ws.getRow(r).height=size===14?21:18;
+  };
+
+  let r=1;
+  bandRow(r,`${seasonPrefix()} 主場檔期日曆`,14); r++;
+  const sub=ws.getCell(r,1);
+  ws.mergeCells(r,1,r,NC);
+  sub.value=`賽季 ${fmtDate(state.season.start)} – ${fmtDate(state.season.end)}`
+    +(opts.pick!=='all'?`　｜　僅顯示 ${teamName(opts.pick)}`:'')
+    +(opts.showFree?'　｜　含未上傳檔期的隊伍':'');
+  sub.font={name:FONT,size:10,color:{argb:'FF667788'}};
+  sub.alignment={horizontal:'center',vertical:'middle'};
+  r+=2;
+
+  const DOWH=['一','二','三','四','五','六','日'];
+  months.forEach(({y,m})=>{
+    bandRow(r,`${y} 年 ${m+1} 月`,12); r++;
+    // 星期表頭
+    DOWH.forEach((d,i)=>{
+      const c=ws.getCell(r,i+1);
+      c.value=d;
+      c.font={name:FONT,size:10,bold:true};
+      c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFEDF0F4'}};
+      c.alignment=mid;c.border=bd;
+    });
+    r++;
+    const daysInMonth=new Date(y,m+1,0).getDate();
+    const startDow=(new Date(y,m,1).getDay()+6)%7;      // 週一為 0
+    // 攤成一維（前置空格 + 日期），再切成每 7 天一週
+    const cellsFlat=[];
+    for(let i=0;i<startDow;i++)cellsFlat.push(null);
+    for(let d=1;d<=daysInMonth;d++)cellsFlat.push(d);
+    while(cellsFlat.length%7!==0)cellsFlat.push(null);
+
+    for(let w=0;w<cellsFlat.length/7;w++){
+      const week=cellsFlat.slice(w*7,w*7+7);
+      const info=week.map(d=>{
+        if(d===null)return null;
+        const ds=`${y}-${pad(m+1)}-${pad(d)}`;
+        return {d,ds,...homeCalDay(ds,opts)};
+      });
+      // 該週最多要幾列隊伍（禁排日至少 1 列放原因）
+      const need=Math.max(1,...info.map(x=>!x?0:(x.bo?1:x.shown.length)));
+      // 日期列
+      info.forEach((x,i)=>{
+        const c=ws.getCell(r,i+1);
+        if(x){
+          c.value=x.d;
+          c.font={name:FONT,size:10,bold:true,color:{argb:x.inSeason?'FF334455':'FFAAB4BE'}};
+          if(!x.inSeason)c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF2F4F7'}};
+          else if(x.bo)c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFDECEC'}};
+        }
+        c.alignment=mid;c.border=bd;
+      });
+      r++;
+      // 隊伍列
+      for(let k=0;k<need;k++){
+        info.forEach((x,i)=>{
+          const c=ws.getCell(r+k,i+1);
+          c.alignment=mid;c.border=bd;
+          c.font={name:FONT,size:10};
+          if(!x)return;
+          if(!x.inSeason){c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF2F4F7'}};return}
+          if(x.bo){
+            if(k===0){
+              c.value=`🚫 ${x.bo}`;
+              c.font={name:FONT,size:9,bold:true,color:{argb:'FFC0392B'}};
+            }
+            c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFDECEC'}};
+            return;
+          }
+          const item=x.shown[k];
+          if(!item)return;
+          const t=item.team;
+          c.value=t.name+(item.done?' ✓':'');
+          if(item.free){                                  // 未上傳檔期：白底灰字
+            c.font={name:FONT,size:10,color:{argb:'FF8A97A5'},italic:true};
+          }else{
+            c.fill={type:'pattern',pattern:'solid',fgColor:{argb:hexToARGB(t.color)}};
+            c.font={name:FONT,size:10,bold:true,
+              color:{argb:isDarkColor(t.color)?'FFFFFFFF':'FF000000'}};
+          }
+        });
+      }
+      r+=need;
+    }
+    r++;                                                  // 月與月之間空一列
+  });
+
+  // 圖例
+  const lg=ws.getCell(r,1);
+  ws.mergeCells(r,1,r,NC);
+  lg.value='✓＝該隊當天已排定主場　｜　紅底＝全聯盟禁排　｜　灰底＝賽季外　｜　斜體灰字＝未上傳檔期（主場不受限制）';
+  lg.font={name:FONT,size:9,color:{argb:'FF667788'}};
+  lg.alignment={horizontal:'center',vertical:'middle'};
+
+  const buf=await wb.xlsx.writeBuffer();
+  const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  const base=(seasonPrefix()+' 主場檔期日曆').replace(/[\\/:*?"<>|]/g,'').replace(/\s+/g,'_');
+  a.download=`${base}_${ymd(new Date())}.xlsx`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+  toast(`已匯出主場檔期日曆（${months.length} 個月）`);
+}
+// 列印／存成 PDF：交給瀏覽器的列印對話框（選「另存為 PDF」）
+function printHomeCal(){
+  if(currentTab!=='homecal')switchTab('homecal');
+  window.print();
 }
 
 /* ---------- 公平性檢視表（出賽日主客分配；顯示哪幾天可勾選）----------
