@@ -386,23 +386,6 @@ select.scope-sel{padding:4px 6px;font-size:12px;min-width:96px;width:auto}
 .vcal-cell.vc-has.vc-sel{box-shadow:none}
 .vcal-cell .vdot{position:absolute;bottom:3px;width:4px;height:4px;border-radius:50%;background:var(--ok)}
 .vcal-cell.vc-sel .vdot{background:#fff}
-/* ---------- 列印 / 存成 PDF（只印主場檔期日曆）---------- */
-@media print{
-  @page{size:A4 landscape;margin:10mm}
-  /* 強制保留底色，否則瀏覽器列印會把色塊全部濾掉，日曆就失去意義 */
-  *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}
-  body{background:#fff}
-  .topbar,.tabs,.matrix-fab,.toast,.overlay{display:none !important}
-  .view{display:none !important}
-  .view#view-homecal{display:block !important}
-  #view-homecal .section-head p,#view-homecal .hint,.hc-toolbar{display:none !important}
-  #view-homecal .card{border:none;box-shadow:none;padding:0;margin:0}
-  .hc-month{break-inside:avoid;page-break-inside:avoid;margin-bottom:14px}
-  .hc-cell{min-height:66px}
-  .hc-cell.hc-dim{opacity:1}          /* 列印時不要淡出，避免看起來像印壞 */
-  .hc-legend{break-inside:avoid}
-}
-
 /* ---------- 主場檔期日曆 ---------- */
 .hc-toolbar{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:16px}
 .hc-chk{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-soft);cursor:pointer;user-select:none;padding-bottom:6px}
@@ -765,7 +748,6 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
         <span style="flex:1"></span>
         <span class="tiny muted" id="hcSummary"></span>
         <button class="btn sm" onclick="exportHomeCalExcel()">📊 匯出 Excel</button>
-        <button class="btn sm" onclick="printHomeCal()">🖨 列印 / 存成 PDF</button>
       </div>
       <div id="homeCalWrap"></div>
     </div>
@@ -2438,12 +2420,6 @@ async function exportHomeCalExcel(){
   URL.revokeObjectURL(a.href);
   toast(`已匯出主場檔期日曆（${months.length} 個月）`);
 }
-// 列印／存成 PDF：交給瀏覽器的列印對話框（選「另存為 PDF」）
-function printHomeCal(){
-  if(currentTab!=='homecal')switchTab('homecal');
-  window.print();
-}
-
 /* ---------- 公平性檢視表（出賽日主客分配；顯示哪幾天可勾選）----------
    顯示邏輯（三層，由弱到強）：
      1. state.analysisDays 為 null（預設）＝「自動」：依賽程中實際有排賽的星期決定欄位，
