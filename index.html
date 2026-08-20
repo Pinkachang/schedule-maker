@@ -230,6 +230,10 @@ select.scope-sel{padding:4px 6px;font-size:12px;min-width:96px;width:auto}
 .slot.conflict{border-color:var(--bad)!important;background:var(--bad-bg)!important;border-width:1.5px}
 .slot.offwl{border-left:4px solid var(--warn)}
 .slot.offwl.conflict{border-left:4px solid var(--warn)}
+.mnote{margin-top:5px;font-size:10.5px;line-height:1.4;color:#7a6a2e;background:#fdf6e0;
+  border-radius:4px;padding:2px 5px;word-break:break-all}
+.pv-note{font-size:11.5px;color:#7a6a2e;background:#fdf6e0;border-radius:4px;padding:1px 6px;
+  margin-left:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;display:inline-block;vertical-align:middle}
 .offwl-badge{
   position:absolute;top:5px;right:6px;font-size:9px;font-weight:700;
   color:#fff;background:var(--warn);padding:1px 6px;border-radius:4px;letter-spacing:.5px;
@@ -920,6 +924,10 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
     <div class="modal-body">
       <div class="field"><label>主場隊伍</label><div class="team-picker" id="homePicker"></div></div>
       <div class="field" style="margin-top:14px"><label>客場隊伍</label><div class="team-picker" id="awayPicker"></div></div>
+      <div class="field" style="margin-top:14px">
+        <label>備註 <span class="tiny muted" style="font-weight:400">（選填，會顯示在排程格與賽程預覽）</span></label>
+        <input class="input" id="matchNote" maxlength="60" placeholder="例：開幕戰、封館日、電視轉播">
+      </div>
     </div>
     <div class="modal-foot">
       <button class="btn ghost" id="removeMatchBtn" onclick="removeMatch()" style="margin-right:auto;display:none">移除此場比賽</button>
@@ -1624,6 +1632,7 @@ function renderSchedule(){
               <span class="vs">VS</span>
               <div class="mteam">${m.away==='TBD'?'<span style="display:inline-block;width:16px;height:16px;border-radius:3px;background:repeating-linear-gradient(45deg,#c4ccd6,#c4ccd6 3px,#eef1f5 3px,#eef1f5 6px);flex-shrink:0"></span>':teamMark(a,16,'mlogo')}${teamName(m.away)}</div>
             </div>
+            ${m.note?`<div class="mnote" title="${esc(m.note)}">📌 ${esc(m.note.length>NOTE_MAX?m.note.slice(0,NOTE_MAX)+'…':m.note)}</div>`:''}
           </div>`;
         }else{
           // 空格：顯示白名單小色點（有上傳檔期且命中此時段的隊）
@@ -1823,6 +1832,7 @@ function renderPreview(){
         <span class="pv-side">${awayMark}${teamName(m.away)}${awayTag}</span>
       </span>
       <span class="pv-venue">📍 ${venue}</span>
+      ${m.note?`<span class="pv-note" title="${esc(m.note)}">📌 ${esc(m.note)}</span>`:''}
       <span class="pv-status">${offWl?'<span class="ts">白名單外</span>':''}</span>
     </div>`;
   }
@@ -1934,6 +1944,8 @@ function openModal(date,time){
   const key=`${date}|${time}`;
   const existing=state.matches[key];
   modalCtx={date,time,key,home:existing?.home||null,away:existing?.away||null};
+  const noteEl=document.getElementById('matchNote');
+  if(noteEl)noteEl.value=existing?.note||'';
   const d=parseYMD(date);
   document.getElementById('modalTitle').textContent=existing?'編輯比賽':'排入比賽';
   document.getElementById('modalWhen').textContent=`${fmtDate(date)}（${DOW[d.getDay()]}）${time}`;
@@ -1942,6 +1954,15 @@ function openModal(date,time){
   document.getElementById('modal').classList.add('show');
 }
 function closeModal(){document.getElementById('modal').classList.remove('show');modalCtx=null}
+
+/* 備註是自由文字，插進 template literal 前一律逸出，
+   否則使用者打 < 或 " 會弄壞版面（也避免注入）。*/
+function esc(str){
+  return String(str==null?'':str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+const NOTE_MAX=40;   // 排程格空間有限，超過會截斷顯示（完整內容看 tooltip）
 
 function renderPickers(){
   const {date,time,key}=modalCtx;
@@ -2022,7 +2043,10 @@ function confirmMatch(){
 }
 // 真正把比賽寫入
 function doPlaceMatch(){
-  state.matches[modalCtx.key]={home:modalCtx.home,away:modalCtx.away};
+  const note=(document.getElementById('matchNote')?.value||'').trim();
+  const rec={home:modalCtx.home,away:modalCtx.away};
+  if(note)rec.note=note;                       // 空備註不寫欄位，保持 JSON 乾淨
+  state.matches[modalCtx.key]=rec;
   closeModal();renderAll();
   toast('已排入');
 }
