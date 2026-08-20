@@ -390,6 +390,34 @@ select.scope-sel{padding:4px 6px;font-size:12px;min-width:96px;width:auto}
 .vcal-cell.vc-has.vc-sel{box-shadow:none}
 .vcal-cell .vdot{position:absolute;bottom:3px;width:4px;height:4px;border-radius:50%;background:var(--ok)}
 .vcal-cell.vc-sel .vdot{background:#fff}
+/* ---------- 列印 / 存成 PDF ----------
+   刻意「印目前所在的分頁」而不是寫死排程頁：
+   .view 本來就只有 .active 會顯示，列印時沿用同一套規則即可，
+   不必為每個分頁各寫一條，也不會像寫死那樣在列印其他分頁時把畫面綁架。 */
+.print-head{display:none}                 /* 螢幕上不顯示，只在列印時出現 */
+@media print{
+  @page{size:A4 landscape;margin:8mm}
+  /* 瀏覽器列印預設會濾掉背景色；隊色、衝突紅底、禁排底色是這份表的重點，必須保留 */
+  *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important}
+  html,body{background:#fff !important}
+  /* 螢幕用的操作介面一律不印 */
+  .topbar,.tabs,.matrix-fab,.toast,.overlay,.sched-toolbar,.scoreboard,
+  .hc-toolbar,.fair-daybar,.section-head p,.hint,.btn,.mid-controls{display:none !important}
+  .view{display:none !important}
+  .view.active{display:block !important}
+  .print-head{
+    display:block;margin:0 0 10px;padding:0 0 8px;border-bottom:2px solid #0070C0;
+  }
+  .print-head .ph-title{font-size:16px;font-weight:800;color:#0070C0}
+  .print-head .ph-sub{font-size:10.5px;color:#667788;margin-top:3px}
+  .card{border:none !important;box-shadow:none !important;padding:0 !important;margin:0 0 10px !important}
+  /* 一週一張卡，不要被切成兩頁 */
+  .week,.hc-month,table{break-inside:avoid;page-break-inside:avoid}
+  .week{box-shadow:none;margin-bottom:8px}
+  .slot{min-height:0}
+  .hc-cell.hc-dim{opacity:1}       /* 列印時不要淡出，免得看起來像印壞 */
+}
+
 /* ---------- 主場檔期日曆 ---------- */
 .hc-toolbar{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:16px}
 .hc-chk{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-soft);cursor:pointer;user-select:none;padding-bottom:6px}
@@ -646,6 +674,7 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
 
   <!-- ============ 排程 ============ -->
   <div class="view active" id="view-schedule">
+    <div class="print-head" id="printHeadSched"></div>
     <div class="sched-toolbar">
       <div class="legend">
         <span><span class="dot" style="background:#fff;border:1px dashed var(--line)"></span>空檔</span>
@@ -655,6 +684,7 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
       </div>
       <div class="spacer" style="flex:1"></div>
       <span class="tiny muted" id="schedSummary"></span>
+      <button class="btn sm" onclick="printCurrentView()" title="用瀏覽器列印功能輸出目前分頁；在列印視窗選「另存為 PDF」">🖨 存成 PDF</button>
     </div>
     <div id="sbSentinel" style="height:1px"></div>
     <div class="scoreboard" id="scoreboard" style="display:none"></div>
@@ -2446,6 +2476,25 @@ async function exportHomeCalExcel(){
   URL.revokeObjectURL(a.href);
   toast(`已匯出主場檔期日曆（${months.length} 個月）`);
 }
+/* ---------- 列印 / 存成 PDF ----------
+   走瀏覽器原生列印（在列印視窗選「另存為 PDF」），不外掛截圖函式庫。
+   原因見交接文件：html2canvas 產出的是點陣圖，放大糊、檔案大、
+   且分頁得自己算，常把整週的卡片攔腰切斷；原生列印是向量文字，
+   可搜尋可選取，且 break-inside:avoid 由瀏覽器負責分頁。 */
+function printCurrentView(){
+  // 頂欄在列印時會被隱藏，所以把標題與產出時間補進內容區
+  const head=document.querySelector('.view.active .print-head');
+  if(head){
+    const now=new Date();
+    const stamp=`${ymd(now)} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    const filled=Object.keys(state.matches).length;
+    head.innerHTML=`<div class="ph-title">${esc(schedTitle())}</div>
+      <div class="ph-sub">賽季 ${fmtDate(state.season.start)} – ${fmtDate(state.season.end)}
+        ｜ 已排 ${filled} / ${gamesTotal()} 場 ｜ 產出時間 ${stamp}${state.meta?.savedBy?'　製表：'+esc(state.meta.savedBy):''}</div>`;
+  }
+  window.print();
+}
+
 /* ---------- 公平性檢視表（出賽日主客分配；顯示哪幾天可勾選）----------
    顯示邏輯（三層，由弱到強）：
      1. state.analysisDays 為 null（預設）＝「自動」：依賽程中實際有排賽的星期決定欄位，
