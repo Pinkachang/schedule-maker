@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light">
 <title>TPBL 賽程排程工具</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
@@ -102,6 +103,18 @@ input,select{font-family:inherit;font-size:14px}
 }
 .card h3{margin:0 0 4px;font-size:14.5px;font-weight:700}
 .card .hint{margin:0 0 14px;color:var(--ink-soft);font-size:12.5px}
+/* 可摺疊說明：長段落預設收起，需要時再展開，讓表格能直接進到第一屏 */
+.hint-d{margin:0 0 14px;font-size:12.5px;color:var(--ink-soft)}
+.hint-d>summary{
+  cursor:pointer;color:var(--court);font-weight:600;font-size:12.5px;
+  list-style:none;display:inline-flex;align-items:center;gap:5px;user-select:none;
+}
+.hint-d>summary::-webkit-details-marker{display:none}
+.hint-d>summary::before{content:'ⓘ';font-size:12px}
+.hint-d>summary::after{content:'▸';font-size:10px;transition:.15s}
+.hint-d[open]>summary::after{transform:rotate(90deg)}
+.hint-d>summary:hover{color:var(--court-dark)}
+.hint-d>div{margin-top:8px;line-height:1.7;padding-left:2px;border-left:2px solid var(--line-soft);padding-left:10px}
 
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 @media(max-width:880px){.grid2{grid-template-columns:1fr}}
@@ -182,9 +195,11 @@ select.scope-sel{padding:4px 6px;font-size:12px;min-width:96px;width:auto}
   font-size:12px;color:var(--bad);background:var(--bad-bg);
   padding:2px 9px;border-radius:6px;font-weight:600;
 }
-.week-body{display:flex;gap:0;overflow-x:auto}
+/* justify-content 寫兩行：不支援 safe 的瀏覽器沿用 center，
+   支援的則在欄數多到溢出時自動改為靠左，避免起頭被裁掉 */
+.week-body{display:flex;gap:0;overflow-x:auto;justify-content:center;justify-content:safe center}
 .day-col{
-  flex:1;min-width:118px;border-right:1px solid var(--line-soft);
+  flex:1 1 0;min-width:118px;max-width:220px;border-right:1px solid var(--line-soft);
   display:flex;flex-direction:column;
 }
 .day-col:last-child{border-right:none}
@@ -194,6 +209,14 @@ select.scope-sel{padding:4px 6px;font-size:12px;min-width:96px;width:auto}
 }
 .day-col .dhead .ddate{display:block;font-weight:400;color:var(--ink-soft);font-size:11px;margin-top:1px}
 .day-col.weekend .dhead{color:var(--court)}
+.day-col .dbo{
+  display:flex;flex-wrap:wrap;gap:2px;justify-content:center;margin-top:3px;
+}
+.day-col .dbo .dbo-chip{
+  font-size:9.5px;font-weight:600;line-height:1.5;padding:0 4px;border-radius:4px;
+  background:var(--bad-bg);color:var(--bad);border:1px solid #f1b9b6;white-space:nowrap;
+}
+.day-col .dbo .dbo-chip.more{background:var(--line-soft);color:var(--ink-soft);border-color:var(--line)}
 
 .slot{
   margin:6px;padding:7px 8px;border:1px dashed var(--line);border-radius:7px;
@@ -210,11 +233,12 @@ select.scope-sel{padding:4px 6px;font-size:12px;min-width:96px;width:auto}
 .slot.filled{border-style:solid;cursor:pointer}
 .slot.filled[draggable="true"]{cursor:grab}
 .slot.filled.dragging{opacity:.4;cursor:grabbing}
-/* 拖曳手柄（已排格右上，hover 才明顯） */
+/* 拖曳手柄（已排格左上，hover 才明顯）；.stime 讓出等寬內距免得被壓住 */
 .drag-handle{
-  position:absolute;top:5px;left:6px;font-size:11px;color:var(--lock);
-  cursor:grab;opacity:.35;transition:.12s;letter-spacing:-1px;
+  position:absolute;top:6px;left:6px;font-size:11px;color:var(--lock);
+  cursor:grab;opacity:.35;transition:.12s;letter-spacing:-1px;line-height:1;
 }
+.slot.filled .stime{padding-left:13px}
 .slot.filled:hover .drag-handle{opacity:.8}
 /* drop 目標提示 */
 .slot.drop-ok{border-color:var(--court)!important;border-style:dashed!important;background:#fff3e6!important;border-width:2px!important}
@@ -402,7 +426,8 @@ select.scope-sel{padding:4px 6px;font-size:12px;min-width:96px;width:auto}
   html,body{background:#fff !important}
   /* 螢幕用的操作介面一律不印 */
   .topbar,.tabs,.matrix-fab,.toast,.overlay,.sched-toolbar,.scoreboard,
-  .hc-toolbar,.fair-daybar,.section-head p,.hint,.btn,.mid-controls{display:none !important}
+  .hc-toolbar,.fair-daybar,.section-head p,.hint,.hint-d,.orphan-warn,
+  .btn,.mid-controls{display:none !important}
   .view{display:none !important}
   .view.active{display:block !important}
   .print-head{
@@ -451,6 +476,15 @@ select.scope-sel{padding:4px 6px;font-size:12px;min-width:96px;width:auto}
 .vcal-foot .vcount{font-size:12.5px;color:var(--ink-soft)}
 .vcal-foot .vcount b{color:var(--court)}
 
+/* 落在格線外的「孤兒場次」警示（改時段/縮短賽季後會出現）*/
+.orphan-warn{
+  background:var(--bad-bg);border:1px solid #f1b9b6;border-radius:var(--radius);
+  padding:12px 16px;margin-bottom:14px;font-size:13px;line-height:1.7;color:#8a2f2b;
+}
+.orphan-warn b{font-weight:700}
+.orphan-warn .ow-list{margin:6px 0 0;font-size:12.5px;color:#a4453f}
+.orphan-warn .ow-act{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap}
+
 /* 賽季尚未產生時的空狀態 */
 .empty-state{
   text-align:center;padding:60px 20px;color:var(--ink-soft);
@@ -495,6 +529,9 @@ body:not(.tab-schedule) .matrix-fab{display:none}
 /* ---------- 公平性檢視表 ---------- */
 /* 註：基底規則是 table.tbl th{text-align:left}（權重 0,1,2），
    底下的對齊規則一律用 table.tbl.xxx 前綴，否則會被基底蓋掉 */
+/* 數字型表格靠內容收攏，橫向掃視距離短很多；不加就會被 table.tbl{width:100%} 拉滿 */
+table.tbl.fair-tbl,table.tbl.compact{width:auto}
+table.tbl.compact th,table.tbl.compact td{padding:8px 18px}
 table.tbl.fair-tbl th{text-align:center}              /* 表頭一律置中（主/客、週次群組…）*/
 table.tbl.fair-tbl th.fcol-team{text-align:left}      /* 「隊伍」欄維持靠左 */
 .fair-tbl th.grp{text-align:center;border-bottom:1px solid var(--line);background:#f7f9fb}
@@ -683,9 +720,12 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
         <span><span class="dot" style="background:var(--bad-bg);border:1px solid var(--bad)"></span>衝突</span>
       </div>
       <div class="spacer" style="flex:1"></div>
+      <label class="hc-chk" style="padding-bottom:0" title="整季約 38 週，開季前後常有整週空白；勾起來只看有排賽的週">
+        <input type="checkbox" id="hideEmptyWk" onchange="toggleHideEmptyWeeks(this.checked)"> 隱藏無比賽的週</label>
       <span class="tiny muted" id="schedSummary"></span>
       <button class="btn sm" onclick="printCurrentView()" title="用瀏覽器列印功能輸出目前分頁；在列印視窗選「另存為 PDF」">🖨 存成 PDF</button>
     </div>
+    <div id="orphanWarn"></div>
     <div id="sbSentinel" style="height:1px"></div>
     <div class="scoreboard" id="scoreboard" style="display:none"></div>
     <div id="weeksContainer"></div>
@@ -747,13 +787,13 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
     <div class="section-head"><h2>賽程分析</h2><p>公平性檢視（各出賽日主客分配）與對戰分布（上下半季群聚）</p></div>
     <div class="card">
       <h3>⚖️ 公平性檢視</h3>
-      <p class="hint">各出賽日的票房與客場移動負擔不同。這裡列出每隊在各出賽日各排了幾場主／客場，以及整季「一週三戰」發生次數，方便檢視分配是否平均。<b>同一欄中最高與最低相差較大者會標色</b>，僅供你判斷，工具不替你定義公平。<br>
-        欄位<b>預設自動跟著賽程走</b>——賽程裡出現哪幾個星期就顯示哪幾欄（目前 TPBL 為三、五、六、日；日後若加禮拜四賽事會自動長出來）。也可以在下方自行勾選只看某幾天。</p>
+      <details class="hint-d"><summary>怎麼看這張表</summary><div>各出賽日的票房與客場移動負擔不同。這裡列出每隊在各出賽日各排了幾場主／客場，以及整季「一週三戰」發生次數，方便檢視分配是否平均。<b>同一欄中最高與最低相差較大者會標色</b>，僅供你判斷，工具不替你定義公平。<br>
+        欄位<b>預設自動跟著賽程走</b>——賽程裡出現哪幾個星期就顯示哪幾欄（目前 TPBL 為三、五、六、日；日後若加禮拜四賽事會自動長出來）。也可以在下方自行勾選只看某幾天。</div></details>
       <div style="overflow-x:auto" id="fairnessWrap"></div>
     </div>
     <div class="card">
       <h3>📊 對戰分布</h3>
-      <p class="hint">設定一個「季中日期」把賽季切成上半季／下半季（日期切分；當天含之後算下半季），檢查<b>各隊主場對某一對手的比賽是否擠在同一半季</b>——例如主場對海神 3 場全排在上半季，賣點提早用完、後段沒戲。各隊上下半季主場<b>總數</b>本來就不會剛好一半一半（受場館檔期影響），那是雜訊；真正要抓的是單一對手 <b>3-0／0-3</b> 的集中。此表只計已排比賽，不含待訂(TBD)。</p>
+      <details class="hint-d"><summary>怎麼看這兩張表</summary><div>設定一個「季中日期」把賽季切成上半季／下半季（日期切分；當天含之後算下半季），檢查<b>各隊主場對某一對手的比賽是否擠在同一半季</b>——例如主場對海神 3 場全排在上半季，賣點提早用完、後段沒戲。各隊上下半季主場<b>總數</b>本來就不會剛好一半一半（受場館檔期影響），那是雜訊；真正要抓的是單一對手 <b>3-0／0-3</b> 的集中。此表只計已排比賽，不含待訂(TBD)。</div></details>
       <div class="mid-toolbar">
         <label style="font-size:12.5px;color:var(--ink-soft);font-weight:600">季中日期</label>
         <input type="date" id="midDateInput" class="input" style="width:auto" onchange="setMidDate(this.value)">
@@ -772,8 +812,8 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
   <div class="view" id="view-homecal">
     <div class="section-head"><h2>主場檔期日曆</h2><p>依球團回報的白名單，逐月列出每天有哪些隊伍可以排主場</p></div>
     <div class="card">
-      <p class="hint">月份範圍依「隊伍與賽季」的賽季區間<b>整月顯示</b>——例如賽季 10/17 開打、5/16 結束，就會顯示完整的 10 月到 5 月。
-        每格列出<b>當天有回報可用主場檔期的隊伍</b>；已在該日排定主場的隊伍會加上 ✓。<b>未上傳任何檔期的隊伍不受白名單限制</b>，因此不會出現在格子裡（可勾選下方選項一併列出）。</p>
+      <details class="hint-d"><summary>這張日曆怎麼讀</summary><div>月份範圍依「隊伍與賽季」的賽季區間<b>整月顯示</b>——例如賽季 10/17 開打、5/16 結束，就會顯示完整的 10 月到 5 月。
+        每格列出<b>當天有回報可用主場檔期的隊伍</b>；已在該日排定主場的隊伍會加上 ✓。<b>未上傳任何檔期的隊伍不受白名單限制</b>，因此不會出現在格子裡（可勾選下方選項一併列出）。</div></details>
       <div class="hc-toolbar">
         <div class="field" style="min-width:170px"><label>隊伍</label>
           <select class="input" id="hcTeam" onchange="renderHomeCal()"></select></div>
@@ -781,7 +821,7 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
         <label class="hc-chk"><input type="checkbox" id="hcShowFree" onchange="renderHomeCal()"> 一併列出未上傳檔期的隊伍</label>
         <span style="flex:1"></span>
         <span class="tiny muted" id="hcSummary"></span>
-        <button class="btn sm" onclick="exportHomeCalExcel()">📊 匯出 Excel</button>
+        <button class="btn sm" onclick="exportHomeCalExcel().catch(e=>{console.error(e);toast('匯出失敗：'+(e&&e.message||''),true)})">📊 匯出 Excel</button>
       </div>
       <div id="homeCalWrap"></div>
     </div>
@@ -944,7 +984,7 @@ code.k{background:var(--line-soft);padding:1px 6px;border-radius:4px;font-size:1
 </div>
 
 <!-- 排賽 Modal -->
-<div class="overlay" id="modal">
+<div class="overlay" id="modal" onclick="if(event.target===this)closeModal()">
   <div class="modal">
     <div class="modal-head">
       <h3 id="modalTitle">排入比賽</h3>
@@ -1149,6 +1189,10 @@ function weekNoMap(){
 function team(id){return state.teams.find(t=>t.id===id)}
 function teamName(id){if(id==='TBD')return '待訂';const t=team(id);return t?t.name:'?'}
 function uid(){return Math.random().toString(36).slice(2,9)}
+/* 隊名、場館名、禁排原因會被直接插進 template literal（含 title="..." 屬性），
+   一個 < 或 " 就會把版面弄壞。這幾個欄位在「寫入端」統一過濾，
+   一次涵蓋畫面、PDF 與 Excel 匯出，不必在四十幾個算繪點各補 esc()。 */
+function cleanText(v){return String(v==null?'':v).replace(/[<>"]/g,'').trim()}
 function inRange(dateStr,start,end){return dateStr>=start && dateStr<=end}
 
 let toastTimer=null;
@@ -1259,6 +1303,10 @@ function doClearSchedule(){
 // 補齊舊資料缺的欄位（向後相容）
 function normalizeTeams(){
   if(!state.meta)state.meta={savedBy:'',savedAt:''};
+  // 舊存檔可能存過含 < > " 的隊名／場館／原因，載入時一併清掉
+  state.teams.forEach(t=>{t.name=cleanText(t.name);t.venue=cleanText(t.venue)});
+  (state.leagueBlackouts||[]).forEach(b=>b.reason=cleanText(b.reason));
+  (state.teamBlackouts||[]).forEach(b=>b.reason=cleanText(b.reason));
   // logo 欄位處理：
   //  - undefined（舊資料根本沒這欄位）→ 若該隊 id 在預設清單有 LOGO，補上預設，讓舊暫存也能顯示 LOGO
   //  - ''（使用者曾明確清除改用顏色）→ 維持空，尊重使用者選擇
@@ -1575,16 +1623,87 @@ function renderAll(){
 }
 
 /* ---------- 排程視圖 ---------- */
+/* 「隱藏無比賽的週」開關（記在本機，與 state 分開）*/
+const LS_HIDE_EMPTY_WK='tpbl_hide_empty_weeks';
+let hideEmptyWeeks=false;
+function loadHideEmptyWeeks(){
+  try{hideEmptyWeeks=localStorage.getItem(LS_HIDE_EMPTY_WK)==='1'}catch(e){}
+  const el=document.getElementById('hideEmptyWk');
+  if(el)el.checked=hideEmptyWeeks;
+}
+function toggleHideEmptyWeeks(on){
+  hideEmptyWeeks=!!on;
+  try{localStorage.setItem(LS_HIDE_EMPTY_WK,hideEmptyWeeks?'1':'0')}catch(e){}
+  renderSchedule();
+}
+
+/* ===================================================================
+   孤兒場次：state.matches 的 key 不在目前格線（buildGameSlots）裡的比賽。
+   刪掉某個時段、或把賽季區間縮短之後就會出現——畫面上完全看不到，
+   卻仍計入統計、仍跑衝突檢查、仍會被匯出到 Excel。必須主動攤出來。
+   =================================================================== */
+function orphanMatches(slots){
+  const valid=new Set((slots||buildGameSlots()).map(s=>`${s.date}|${s.time}`));
+  return Object.keys(state.matches).filter(k=>!valid.has(k))
+    .sort()
+    .map(k=>{const[date,time]=k.split('|');return{key:k,date,time,...state.matches[k]}});
+}
+function renderOrphanWarn(slots){
+  const el=document.getElementById('orphanWarn');
+  if(!el)return;
+  const orphans=orphanMatches(slots);
+  if(orphans.length===0){el.innerHTML='';return}
+  const lines=orphans.slice(0,8).map(m=>
+    `${fmtDate(m.date)}（${DOW[parseYMD(m.date).getDay()]}）${m.time}　${esc(teamName(m.home))} vs ${esc(teamName(m.away))}`
+  ).join('<br>');
+  el.innerHTML=`<div class="orphan-warn">
+    ⚠ 有 <b>${orphans.length} 場已排比賽落在目前的格線之外</b>，畫面上看不到，
+    但仍計入統計、仍會被匯出到 Excel。<br>
+    通常是因為刪掉了某個可排時段，或把賽季區間改短了。
+    <div class="ow-list">${lines}${orphans.length>8?`<br>…另有 ${orphans.length-8} 場`:''}</div>
+    <div class="ow-act">
+      <button class="btn sm" onclick="restoreOrphanSlots()">↩ 把這些時段加回「可排時段」</button>
+      <button class="btn sm" style="border-color:var(--bad);color:var(--bad)" onclick="deleteOrphans()">🗑 刪除這些比賽</button>
+    </div>
+  </div>`;
+}
+// 把孤兒場次用到的「星期＋時間」補回 state.slots，讓比賽重新出現在格線上
+function restoreOrphanSlots(){
+  const orphans=orphanMatches();
+  if(orphans.length===0)return;
+  let added=0,outOfSeason=0;
+  orphans.forEach(m=>{
+    const d=parseYMD(m.date);
+    if(m.date<state.season.start||m.date>state.season.end){outOfSeason++;return}
+    if(!state.slots.some(x=>x.day===d.getDay()&&x.time===m.time)){
+      state.slots.push({day:d.getDay(),time:m.time});added++;
+    }
+  });
+  renderAll();
+  if(outOfSeason)toast(`已加回 ${added} 個時段；另有 ${outOfSeason} 場落在賽季區間外，請先調整賽季起訖`,true);
+  else toast(`已加回 ${added} 個時段`);
+}
+function deleteOrphans(){
+  const orphans=orphanMatches();
+  if(orphans.length===0)return;
+  if(!confirm(`確定刪除這 ${orphans.length} 場落在格線外的比賽？此動作不可復原。`))return;
+  orphans.forEach(m=>delete state.matches[m.key]);
+  renderAll();
+  toast(`已刪除 ${orphans.length} 場格線外的比賽`);
+}
+
 function renderSchedule(){
   const cont=document.getElementById('weeksContainer');
   const slots=buildGameSlots();
+  renderOrphanWarn(slots);
   if(slots.length===0){
     cont.innerHTML=`<div class="empty-state"><div class="big">尚未產生賽日</div>
       請先到「隊伍與賽季」設定賽季區間與時段，再按「重新產生賽日」。</div>`;
     document.getElementById('schedSummary').textContent='';
     return;
   }
-  const {slotFlags}=checkConflicts();
+  // 整份掃描一次就好：原本 issues 是在每週迴圈裡重算的，38 週就跑 38 次全量檢查
+  const {issues,slotFlags}=checkConflicts();
 
   // 依週分組
   const weeks={};
@@ -1595,10 +1714,16 @@ function renderSchedule(){
   // 該季出現的星期幾（決定欄位）
   const activeDays=[...new Set(state.slots.map(s=>s.day))].sort((a,b)=>((a+6)%7)-((b+6)%7));
 
-  let total=0,filled=0;
+  let total=0,filled=0,hiddenWk=0;
   let html='';
   const wkNoMap=weekNoMap();   // 定義 B：只有排了比賽的週才有號
   Object.keys(weeks).sort().forEach(wk=>{
+    // 「隱藏無比賽的週」：wkNoMap 只收錄有排比賽的週，沒號＝整週空白
+    if(hideEmptyWeeks&&!wkNoMap[wk]){
+      hiddenWk++;
+      weeks[wk].forEach(()=>total++);   // 隱藏不等於不存在，總格數照算
+      return;
+    }
     const monday=parseYMD(wk);
     const sunday=addDays(monday,6);
     const wkSlots=weeks[wk];
@@ -1607,7 +1732,6 @@ function renderSchedule(){
     const notes=new Set();
     wkSlots.forEach(s=>{const r=leagueBlackoutReason(s.date);if(r)notes.add(r)});
     // 該週一週三戰隊伍
-    const {issues}=checkConflicts();
     const w3=issues.filter(i=>i.weekKey===wk&&i.msg.includes('一週三戰'))
                    .map(i=>i.msg.replace('一週三戰：','').split(' 本週')[0]);
     const w3uniq=[...new Set(w3)];
@@ -1630,8 +1754,16 @@ function renderSchedule(){
       const daySlots=wkSlots.filter(s=>s.day===wd).sort((a,b)=>a.time.localeCompare(b.time));
       if(daySlots.length===0) return;
       const isWeekend=(wd===6||wd===0);
+      // 各隊禁排原本只在排賽 modal 裡看得到，格子上完全沒有痕跡；標在欄頭省得點開才發現
+      const boTeams=state.teams.filter(t=>teamBlackoutReason(t.id,dateStr));
+      const boHtml=boTeams.length
+        ? `<div class="dbo" title="${esc(boTeams.map(t=>t.name+'：'+teamBlackoutReason(t.id,dateStr)).join('　'))}">`
+          +boTeams.slice(0,3).map(t=>`<span class="dbo-chip">🚫${esc(t.name)}</span>`).join('')
+          +(boTeams.length>3?`<span class="dbo-chip more">+${boTeams.length-3}</span>`:'')
+          +`</div>`
+        : '';
       html+=`<div class="day-col${isWeekend?' weekend':''}">
-        <div class="dhead">週${DOW[wd]}<span class="ddate">${pad(dayDate.getMonth()+1)}/${pad(dayDate.getDate())}</span></div>`;
+        <div class="dhead">週${DOW[wd]}<span class="ddate">${pad(dayDate.getMonth()+1)}/${pad(dayDate.getDate())}</span>${boHtml}</div>`;
 
       daySlots.forEach(s=>{
         total++;
@@ -1683,7 +1815,8 @@ function renderSchedule(){
   });
   cont.innerHTML=html;
   document.getElementById('schedSummary').textContent=
-    `已排 ${filled} / ${total} 個時段　|　目標 ${gamesTotal()} 場例行賽（目前 ${Object.keys(state.matches).length} 場）`;
+    `已排 ${filled} / ${total} 個時段　|　目標 ${gamesTotal()} 場例行賽（目前 ${Object.keys(state.matches).length} 場）`
+    +(hiddenWk?`　|　已隱藏 ${hiddenWk} 個空白週`:'');
   renderScoreboard();
 }
 
@@ -1853,7 +1986,7 @@ function renderPreview(){
     const awayMark = m.away==='TBD'
       ? `<span class="pc" style="background:repeating-linear-gradient(45deg,#c4ccd6,#c4ccd6 3px,#eef1f5 3px,#eef1f5 6px)"></span>`
       : pvMark(a);
-    return `<div class="pv-row${tent?' tent':''}">
+    return `<div class="pv-row${offWl?' tent':''}">
       <span class="pv-date">${m.date.replace(/-/g,'/')}<span class="pdow">${DOW[d.getDay()]}</span></span>
       <span class="pv-time">${m.time}</span>
       <span class="pv-teams">
@@ -2096,6 +2229,9 @@ function confirmOffWhitelist(){
   toast('已排入（白名單外，已標記提醒）');
 }
 function removeMatch(){
+  const m=state.matches[modalCtx.key];
+  const who=m?`${teamName(m.home)} vs ${teamName(m.away)}`:'';
+  if(!confirm(`移除 ${fmtDate(modalCtx.date)} ${modalCtx.time} 的比賽${who?`（${who}）`:''}？`))return;
   delete state.matches[modalCtx.key];
   closeModal();renderAll();toast('已移除');
 }
@@ -2154,7 +2290,7 @@ function renderOverview(){
     .sort((a,b)=>a.date===b.date?a.time.localeCompare(b.time):a.date.localeCompare(b.date));
   document.getElementById('statGrid').innerHTML=`
     <div class="stat"><div class="label">已排場次</div><div class="val">${ms.length}<small> / ${gamesTotal()}</small></div></div>
-    <div class="stat"><div class="label">完成度</div><div class="val">${Math.round(ms.length/gamesTotal()*100)}<small>%</small></div></div>
+    <div class="stat"><div class="label">完成度</div><div class="val">${gamesTotal()?Math.round(ms.length/gamesTotal()*100):0}<small>%</small></div></div>
     <div class="stat"><div class="label">客隊待訂</div><div class="val">${tbdCount}</div></div>
     <div class="stat"><div class="label">白名單外場次</div><div class="val" style="color:${tentList.length?'var(--warn)':'var(--ink)'}">${tentList.length}</div></div>`;
 
@@ -2166,7 +2302,7 @@ function renderOverview(){
   if(th)th.innerHTML=`主場、客場目標各 ${sideTarget()} 場。`;
 
   // 各隊主客場數
-  let tc=`<table class="tbl"><tr><th>隊伍</th><th>主場</th><th>客場</th><th>合計</th></tr>`;
+  let tc=`<table class="tbl compact"><tr><th>隊伍</th><th>主場</th><th>客場</th><th>合計</th></tr>`;
   state.teams.forEach(t=>{
     const h=homeCount[t.id],a=awayCount[t.id];
     const ST=sideTarget();
@@ -2798,8 +2934,8 @@ function renderSetup(){
       <button onclick="delSlot(${s.day},'${s.time}')">×</button></span>`).join('')||'<span class="muted tiny">尚無時段</span>';
 }
 function addTeam(){
-  const name=document.getElementById('ntName').value.trim();
-  const venue=document.getElementById('ntVenue').value.trim();
+  const name=cleanText(document.getElementById('ntName').value);
+  const venue=cleanText(document.getElementById('ntVenue').value);
   const color=document.getElementById('ntColor').value;
   if(!name){toast('請輸入隊名',true);return}
   state.teams.push({id:uid(),name,venue:venue||name+'主場',color,logo:''});
@@ -2821,8 +2957,8 @@ function editTeam(id){editingTeam=id;renderSetup();
 function cancelEditTeam(){editingTeam=null;renderSetup();}
 function saveTeam(id){
   const t=team(id);if(!t)return;
-  const name=document.getElementById('et_name_'+id).value.trim();
-  const venue=document.getElementById('et_venue_'+id).value.trim();
+  const name=cleanText(document.getElementById('et_name_'+id).value);
+  const venue=cleanText(document.getElementById('et_venue_'+id).value);
   const color=document.getElementById('et_color_'+id).value;
   if(!name){toast('隊名不可空白',true);return}
   t.name=name;t.venue=venue||name+'主場';t.color=color;
@@ -2914,7 +3050,7 @@ function renderBlackout(){
 }
 function addLeagueBlackout(){
   const start=document.getElementById('lbStart').value, end=document.getElementById('lbEnd').value||start;
-  const reason=document.getElementById('lbReason').value.trim();
+  const reason=cleanText(document.getElementById('lbReason').value);
   if(!start){toast('請選擇日期',true);return}
   state.leagueBlackouts.push({id:uid(),start,end,reason});
   document.getElementById('lbReason').value='';
@@ -2925,7 +3061,7 @@ function addTeamBlackout(){
   const teamId=document.getElementById('tbTeam').value;
   const scope=document.getElementById('tbScope').value||'both';
   const start=document.getElementById('tbStart').value, end=document.getElementById('tbEnd').value||start;
-  const reason=document.getElementById('tbReason').value.trim();
+  const reason=cleanText(document.getElementById('tbReason').value);
   if(!teamId){toast('請選擇隊伍',true);return}
   if(!start){toast('請選擇日期',true);return}
   state.teamBlackouts.push({id:uid(),teamId,scope,start,end,reason});
@@ -3038,7 +3174,7 @@ function onVenueFile(e){
   reader.onload=ev=>{
     try{
       const wb=XLSX.read(ev.target.result,{type:'array',cellDates:true});
-      let added=0,skipped=0;
+      let added=0,skipped=0,fuzzyTime=0;
       wb.SheetNames.forEach(sheetName=>{
         const t=state.teams.find(t=>t.name===sheetName.trim());
         if(!t)return; // 找不到對應隊名的工作表略過
@@ -3062,7 +3198,9 @@ function onVenueFile(e){
           const dv=row[dateCol];if(dv===undefined||dv==='')continue;
           const dateStr=parseAnyDate(dv);
           if(!dateStr){skipped++;continue}
-          const time=normTime(timeCol>=0?row[timeCol]:'');
+          const rawTime=normTime(timeCol>=0?row[timeCol]:'');
+          if(rawTime===null)fuzzyTime++;      // 例如球團填「晚上」
+          const time=rawTime===null?'':rawTime;  // 無法辨識一律視為全天，好過存成死資料
           // 去重
           if(!state.venueAvail.some(v=>v.teamId===t.id&&v.date===dateStr&&v.time===time)){
             state.venueAvail.push({teamId:t.id,date:dateStr,time});added++;
@@ -3070,7 +3208,9 @@ function onVenueFile(e){
         }
       });
       renderBlackout();renderAll();
-      toast(`已匯入 ${added} 筆可用檔期`+(skipped?`（${skipped} 筆日期無法解析）`:''));
+      toast(`已匯入 ${added} 筆可用檔期`
+        +(skipped?`（${skipped} 筆日期無法解析）`:'')
+        +(fuzzyTime?`（${fuzzyTime} 筆時段看不懂，已當全天）`:''));
     }catch(err){console.error(err);toast('讀取失敗，請確認檔案格式',true)}
   };
   reader.readAsArrayBuffer(file);
@@ -3096,7 +3236,11 @@ function parseAnyDate(v){
   if(m){const y=2000+ +m[3];return `${y}-${pad(+m[1])}-${pad(+m[2])}`}
   // 無年份：mm/dd（依賽季年份推估，1–6月歸隔年）
   m=s.match(/^(\d{1,2})[\/\-.](\d{1,2})$/);
-  if(m){const y=parseYMD(state.season.start).getFullYear();
+  if(m){
+    // 沒有年份時要靠賽季起日推算；賽季沒設就無從推起，寧可判為無法解析
+    if(!state.season.start)return null;
+    const y=parseYMD(state.season.start).getFullYear();
+    if(!Number.isFinite(y))return null;
     const mm=+m[1],dd=+m[2];const yy=mm<=6?y+1:y;
     return `${yy}-${pad(mm)}-${pad(dd)}`;}
   return null;
@@ -3117,7 +3261,7 @@ function normTime(v){
   const m=s.match(/(\d{1,2})[:：](\d{2})/);
   if(m)return `${pad(+m[1])}:${m[2]}`;
   if(s.includes('全'))return '';
-  return s;
+  return null;   // 無法辨識 → 交給呼叫端決定（原本原樣存入，會變成永遠比不中的死資料）
 }
 
 /* ---------- 球團填寫模板下載 ---------- */
@@ -3204,8 +3348,20 @@ function sortedMatches(){
   return arr;
 }
 
+/* Excel 工作表名有硬性限制：不得含 * ? : \\ / [ ]、不得超過 31 字、不得重複。
+   隊名是使用者自由輸入的，直接拿來當分頁名會讓 ExcelJS 丟例外、整個匯出無聲失敗。
+   這裡統一過濾＋去重，並在重複時加序號。 */
+function safeSheetName(raw,used){
+  let base=String(raw||'').replace(/[\\/:*?\[\]]/g,'_').trim().slice(0,28)||'工作表';
+  let name=base,i=2;
+  while(used.has(name)){name=`${base}(${i++})`.slice(0,31)}
+  used.add(name);
+  return name;
+}
+
 async function exportExcel(){
   const wb=new ExcelJS.Workbook();
+  const usedNames=new Set();
   const all=sortedMatches();
   const wkMap=weekNoMap();   // 定義 B：只有排了比賽的週才編號、接續
 
@@ -3284,7 +3440,7 @@ async function exportExcel(){
   // === 分頁 1：總賽程（全部場次）===
   const TITLE=schedTitle();            // 頂欄「賽程表名」輸入框
   const PREFIX=seasonPrefix();         // 由表名推導的賽季前綴（隊伍分頁區塊標題用）
-  const ws0=wb.addWorksheet('總賽程',{views:[{state:'frozen',ySplit:2}]});
+  const ws0=wb.addWorksheet(safeSheetName('總賽程',usedNames),{views:[{state:'frozen',ySplit:2}]});
   setCols(ws0,1);
   writeBlock(ws0,1,TITLE,all);
 
@@ -3294,7 +3450,8 @@ async function exportExcel(){
   state.teams.forEach(t=>{
     const homeRows=all.filter(m=>m.home===t.id);
     const allRows =all.filter(m=>m.home===t.id||m.away===t.id);
-    const ws=wb.addWorksheet(t.name.slice(0,28),{properties:{tabColor:{argb:hexToARGB(t.color)}}});
+    const ws=wb.addWorksheet(safeSheetName(t.name,usedNames),
+      {views:[{state:'frozen',ySplit:2}],properties:{tabColor:{argb:hexToARGB(t.color)}}});
     setCols(ws,3);
     const step=NCOL+GAP;                                   // 每塊往右位移 8 欄
     writeBlock(ws,1,        TITLE,                                                   all);
@@ -3317,7 +3474,12 @@ async function exportExcel(){
 }
 function doExport(){
   if(Object.keys(state.matches).length===0){toast('尚無比賽可匯出',true);return}
-  exportExcel();
+  // exportExcel 是 async：不接住例外的話，匯出失敗會變成 unhandled rejection，
+  // 畫面上什麼都不會發生，使用者只會覺得按鈕壞了。
+  exportExcel().catch(err=>{
+    console.error('exportExcel failed',err);
+    toast('匯出失敗：'+(err&&err.message?err.message:'未知錯誤'),true);
+  });
 }
 
 /* ---------- 計分板吸頂偵測（加 .stuck 顯示陰影）---------- */
@@ -3336,6 +3498,7 @@ function setupScoreboardStick(){
 function init(){
   loadEditorName();          // 先把本機記住的名字帶回頂欄
   loadScoreboardMode();      // 帶回上次的計分板精簡/詳細選擇
+  loadHideEmptyWeeks();      // 帶回上次的「隱藏無比賽的週」選擇
   if(!loadLocal()){          // 有本機暫存就接續上次，沒有才用初始狀態
     state=blankState();
   }
@@ -3343,11 +3506,20 @@ function init(){
   renderAll();
   setupScoreboardStick();
   document.body.classList.add('tab-schedule');  // 初始為排程頁
-  // Esc 關閉對戰表浮層
+  // Esc 關閉最上層的浮層（依開啟優先序，一次只關一個）
+  const ESC_CLOSERS=[
+    ['offWhitelistWarn', closeOffWhitelistWarn],
+    ['modal',            closeModal],
+    ['matrixPanel',      closeMatrixPanel],
+    ['clearAwayConfirm', closeClearAway],
+    ['clearSchedConfirm',closeClearSchedule],
+  ];
   document.addEventListener('keydown',e=>{
     if(e.key!=='Escape')return;
-    if(document.getElementById('matrixPanel').classList.contains('show'))closeMatrixPanel();
-    if(document.getElementById('clearAwayConfirm').classList.contains('show'))closeClearAway();
+    for(const [id,close] of ESC_CLOSERS){
+      const el=document.getElementById(id);
+      if(el&&el.classList.contains('show')){close();return}
+    }
   });
 }
 init();
