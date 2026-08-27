@@ -195,11 +195,9 @@ select.scope-sel{padding:4px 6px;font-size:12px;min-width:96px;width:auto}
   font-size:12px;color:var(--bad);background:var(--bad-bg);
   padding:2px 9px;border-radius:6px;font-weight:600;
 }
-/* justify-content 寫兩行：不支援 safe 的瀏覽器沿用 center，
-   支援的則在欄數多到溢出時自動改為靠左，避免起頭被裁掉 */
-.week-body{display:flex;gap:0;overflow-x:auto;justify-content:center;justify-content:safe center}
+.week-body{display:flex;gap:0;overflow-x:auto}
 .day-col{
-  flex:1 1 0;min-width:118px;max-width:220px;border-right:1px solid var(--line-soft);
+  flex:1;min-width:118px;border-right:1px solid var(--line-soft);
   display:flex;flex-direction:column;
 }
 .day-col:last-child{border-right:none}
@@ -529,9 +527,6 @@ body:not(.tab-schedule) .matrix-fab{display:none}
 /* ---------- 公平性檢視表 ---------- */
 /* 註：基底規則是 table.tbl th{text-align:left}（權重 0,1,2），
    底下的對齊規則一律用 table.tbl.xxx 前綴，否則會被基底蓋掉 */
-/* 數字型表格靠內容收攏，橫向掃視距離短很多；不加就會被 table.tbl{width:100%} 拉滿 */
-table.tbl.fair-tbl,table.tbl.compact{width:auto}
-table.tbl.compact th,table.tbl.compact td{padding:8px 18px}
 table.tbl.fair-tbl th{text-align:center}              /* 表頭一律置中（主/客、週次群組…）*/
 table.tbl.fair-tbl th.fcol-team{text-align:left}      /* 「隊伍」欄維持靠左 */
 .fair-tbl th.grp{text-align:center;border-bottom:1px solid var(--line);background:#f7f9fb}
@@ -2302,7 +2297,7 @@ function renderOverview(){
   if(th)th.innerHTML=`主場、客場目標各 ${sideTarget()} 場。`;
 
   // 各隊主客場數
-  let tc=`<table class="tbl compact"><tr><th>隊伍</th><th>主場</th><th>客場</th><th>合計</th></tr>`;
+  let tc=`<table class="tbl"><tr><th>隊伍</th><th>主場</th><th>客場</th><th>合計</th></tr>`;
   state.teams.forEach(t=>{
     const h=homeCount[t.id],a=awayCount[t.id];
     const ST=sideTarget();
